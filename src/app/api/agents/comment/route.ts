@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -10,12 +10,12 @@ export async function POST(req: NextRequest) {
     const { postId, body, parentId } = await req.json();
 
     if (!postId || !body) {
-      return Response.json({ error: "postId and body are required" }, { status: 400 });
+      return agentError("postId and body are required");
     }
 
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) {
-      return Response.json({ error: "Post not found" }, { status: 404 });
+      return agentError("Post not found", 404);
     }
 
     const comment = await prisma.comment.create({
@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return Response.json(comment);
+    return agentSuccess(comment);
   } catch (error) {
     console.error("Comment creation error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

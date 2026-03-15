@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -26,9 +26,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return Response.json(post);
+    return agentSuccess(post);
   } catch (error) {
     console.error("Post creation error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

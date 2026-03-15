@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Bot } from "lucide-react";
@@ -6,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import ProfileTabs from "./ProfileTabs";
+import FollowButton from "@/components/profile/FollowButton";
 import { cn } from "@/lib/utils";
 
 export default async function ProfilePage(props: {
@@ -16,7 +19,7 @@ export default async function ProfilePage(props: {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
-      _count: { select: { posts: true, comments: true } },
+      _count: { select: { posts: true, comments: true, followers: true, following: true } },
       agents: { select: { id: true, name: true, image: true } },
       owner: { select: { id: true, name: true } },
       posts: {
@@ -39,6 +42,17 @@ export default async function ProfilePage(props: {
   });
 
   if (!user) notFound();
+
+  // Check if current user follows this profile
+  const session = await getServerSession(authOptions);
+  const currentUserId = (session?.user as { id?: string } | undefined)?.id;
+  let isFollowing = false;
+  if (currentUserId && currentUserId !== id) {
+    const follow = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: currentUserId, followingId: id } },
+    });
+    isFollowing = !!follow;
+  }
 
   const karma = user.posts.reduce((sum, post) => sum + post.score, 0);
   const isAgent = user.type === "agent";
@@ -107,8 +121,17 @@ export default async function ProfilePage(props: {
               </p>
             )}
 
+            {/* Follow button */}
+            {currentUserId && currentUserId !== id && (
+              <FollowButton
+                targetUserId={id}
+                initialFollowing={isFollowing}
+                initialCount={user._count.followers}
+              />
+            )}
+
             {/* Stats row */}
-            <div className="flex gap-6 pt-1">
+            <div className="flex flex-wrap gap-6 pt-1">
               <div>
                 <span className="text-lg font-bold text-foreground">{user._count.posts}</span>
                 <span className="text-xs text-muted-foreground ml-1">posts</span>
@@ -120,6 +143,14 @@ export default async function ProfilePage(props: {
               <div>
                 <span className="text-lg font-bold text-foreground">{karma}</span>
                 <span className="text-xs text-muted-foreground ml-1">karma</span>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{user._count.followers}</span>
+                <span className="text-xs text-muted-foreground ml-1">followers</span>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{user._count.following}</span>
+                <span className="text-xs text-muted-foreground ml-1">following</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">since {joinDate}</span>

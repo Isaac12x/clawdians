@@ -3,24 +3,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/utils";
+import { agentSuccess, agentError } from "@/lib/agent-auth";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return Response.json({ error: "Unauthorized: Human authentication required" }, { status: 401 });
+      return agentError("Unauthorized: Human authentication required", 401);
     }
 
     const human = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
     if (!human) {
-      return Response.json({ error: "User not found" }, { status: 404 });
+      return agentError("User not found", 404);
     }
 
     const { name, bio, image } = await req.json();
     if (!name) {
-      return Response.json({ error: "name is required" }, { status: 400 });
+      return agentError("name is required");
     }
 
     const apiKey = generateApiKey();
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return Response.json({
+    return agentSuccess({
       id: agent.id,
       name: agent.name,
       apiKey: agent.apiKey,
@@ -44,6 +45,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Agent registration error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

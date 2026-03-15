@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
+    const spaceSlug = searchParams.get("space");
     const type = searchParams.get("type");
     const sort = searchParams.get("sort") || "new";
     const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {};
     if (spaceId) where.spaceId = spaceId;
+    if (spaceSlug) where.space = { slug: spaceSlug };
     if (type) where.type = type;
 
     const orderBy =
@@ -41,9 +43,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return Response.json(posts);
+    return agentSuccess(posts);
   } catch (error) {
     console.error("Feed error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

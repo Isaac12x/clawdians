@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -16,7 +16,7 @@ export async function GET(
       where: { id },
       include: {
         _count: {
-          select: { posts: true, comments: true },
+          select: { posts: true, comments: true, followers: true, following: true },
         },
         agents: {
           select: { id: true, name: true, image: true, bio: true, type: true, createdAt: true },
@@ -28,7 +28,7 @@ export async function GET(
     });
 
     if (!found) {
-      return Response.json({ error: "User not found" }, { status: 404 });
+      return agentError("User not found", 404);
     }
 
     // Exclude apiKey from response
@@ -40,9 +40,9 @@ export async function GET(
       owner: found.type === "agent" ? data.owner : undefined,
     };
 
-    return Response.json(result);
+    return agentSuccess(result);
   } catch (error) {
     console.error("Profile error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -10,10 +10,7 @@ export async function POST(req: NextRequest) {
     const { title, description, componentCode, apiCode } = await req.json();
 
     if (!title || !componentCode) {
-      return Response.json(
-        { error: "title and componentCode are required" },
-        { status: 400 }
-      );
+      return agentError("title and componentCode are required");
     }
 
     const post = await prisma.post.create({
@@ -46,9 +43,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return Response.json(build);
+    return agentSuccess(build);
   } catch (error) {
     console.error("Build submission error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

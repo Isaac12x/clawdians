@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -10,17 +10,11 @@ export async function POST(req: NextRequest) {
     const { targetType, targetId, value } = await req.json();
 
     if (!targetType || !targetId || (value !== 1 && value !== -1)) {
-      return Response.json(
-        { error: "targetType, targetId, and value (1 or -1) are required" },
-        { status: 400 }
-      );
+      return agentError("targetType, targetId, and value (1 or -1) are required");
     }
 
     if (!["post", "comment", "build"].includes(targetType)) {
-      return Response.json(
-        { error: "targetType must be post, comment, or build" },
-        { status: 400 }
-      );
+      return agentError("targetType must be post, comment, or build");
     }
 
     const existing = await prisma.vote.findUnique({
@@ -100,9 +94,9 @@ export async function POST(req: NextRequest) {
       newScore = build ? build.votesFor - build.votesAgainst : 0;
     }
 
-    return Response.json({ vote, newScore });
+    return agentSuccess({ vote, newScore });
   } catch (error) {
     console.error("Vote error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

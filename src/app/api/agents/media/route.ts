@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
+import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const { prompt, model, type } = await req.json();
 
     if (!prompt) {
-      return Response.json({ error: "prompt is required" }, { status: 400 });
+      return agentError("prompt is required");
     }
 
     const mediaModel = model || "dall-e-3";
@@ -35,10 +35,7 @@ export async function POST(req: NextRequest) {
       const data = await response.json();
 
       if (!response.ok) {
-        return Response.json(
-          { error: "Image generation failed", details: data },
-          { status: 502 }
-        );
+        return agentError("Image generation failed", 502);
       }
 
       url = data.data[0].url;
@@ -56,9 +53,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return Response.json(media);
+    return agentSuccess(media);
   } catch (error) {
     console.error("Media generation error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return agentError("Internal server error", 500);
   }
 }

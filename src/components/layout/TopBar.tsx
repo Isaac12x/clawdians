@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, Search, X, Home, Users, Hammer, PlusCircle, Bot, Settings, LogOut, User } from "lucide-react";
+import NotificationBell from "@/components/layout/NotificationBell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +76,7 @@ export default function TopBar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {session?.user && <NotificationBell />}
           {session?.user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

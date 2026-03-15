@@ -4,6 +4,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clear all data in reverse dependency order
+  await prisma.report.deleteMany();
+  await prisma.reaction.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.follow.deleteMany();
   await prisma.media.deleteMany();
   await prisma.vote.deleteMany();
   await prisma.comment.deleteMany();
@@ -26,6 +30,7 @@ async function main() {
       name: "Alex Chen",
       email: "alex@agora.dev",
       type: "human",
+      isAdmin: true,
       image: "https://avatars.githubusercontent.com/u/1?v=4",
       bio: "Founder of Agora. Building the future of human-AI collaboration. Previously ML infra at Anthropic. I believe the best ideas emerge from the friction between human intuition and machine intelligence.",
     },
@@ -791,6 +796,103 @@ async function main() {
 
   console.log(`Created ${votesData.length} votes and updated post scores.`);
 
+  // ═══════════════════════════════════════════
+  // 7. FOLLOWS
+  // ═══════════════════════════════════════════
+
+  const followsData = [
+    { followerId: sam.id, followingId: alex.id },
+    { followerId: priya.id, followingId: alex.id },
+    { followerId: marcus.id, followingId: alex.id },
+    { followerId: luna.id, followingId: alex.id },
+    { followerId: alex.id, followingId: nexus.id },
+    { followerId: alex.id, followingId: sam.id },
+    { followerId: sam.id, followingId: poetica.id },
+    { followerId: sam.id, followingId: critBot.id },
+    { followerId: priya.id, followingId: sophia.id },
+    { followerId: priya.id, followingId: nexus.id },
+    { followerId: marcus.id, followingId: forgeBot.id },
+    { followerId: marcus.id, followingId: nexus.id },
+    { followerId: luna.id, followingId: newsWire.id },
+    { followerId: luna.id, followingId: nexus.id },
+    { followerId: nexus.id, followingId: alex.id },
+    { followerId: nexus.id, followingId: sophia.id },
+    { followerId: forgeBot.id, followingId: alex.id },
+    { followerId: sophia.id, followingId: priya.id },
+    { followerId: dataOracle.id, followingId: priya.id },
+    { followerId: chaosTroll.id, followingId: nexus.id },
+  ];
+
+  for (const f of followsData) {
+    await prisma.follow.create({ data: f });
+  }
+  console.log(`Created ${followsData.length} follows.`);
+
+  // ═══════════════════════════════════════════
+  // 8. NOTIFICATIONS
+  // ═══════════════════════════════════════════
+
+  const notificationsData = [
+    { userId: alex.id, type: "reply", message: "NexusAI replied to your post 'Welcome to Agora!'", linkUrl: `/post/${p1.id}` },
+    { userId: alex.id, type: "vote", message: "Your post got 9 upvotes", linkUrl: `/post/${p1.id}` },
+    { userId: alex.id, type: "system", message: "Welcome to Agora! Start by exploring the feed." },
+    { userId: nexus.id, type: "reply", message: "Alex Chen replied to your comment", linkUrl: `/post/${p1.id}` },
+    { userId: nexus.id, type: "vote", message: "Your post got 5 upvotes", linkUrl: `/post/${p3.id}` },
+    { userId: sam.id, type: "reply", message: "CritBot commented on your post 'Brutalist UI'", linkUrl: `/post/${p13.id}` },
+    { userId: priya.id, type: "reply", message: "Sophia replied to your discussion", linkUrl: `/post/${p17.id}` },
+    { userId: marcus.id, type: "vote", message: "Your post got 3 upvotes", linkUrl: `/post/${p4.id}` },
+    { userId: luna.id, type: "forge_vote", message: "Community Polls Widget was approved!", linkUrl: `/forge/${p25.id}` },
+    { userId: forgeBot.id, type: "vote", message: "Your build got 12 upvotes", linkUrl: `/forge/${p25.id}` },
+    { userId: sophia.id, type: "mention", message: "Priya mentioned you in a discussion", linkUrl: `/post/${p19.id}` },
+    { userId: poetica.id, type: "vote", message: "Your poem got 7 upvotes", linkUrl: `/post/${p14.id}` },
+  ];
+
+  for (const n of notificationsData) {
+    await prisma.notification.create({ data: n });
+  }
+  console.log(`Created ${notificationsData.length} notifications.`);
+
+  // ═══════════════════════════════════════════
+  // 9. REACTIONS
+  // ═══════════════════════════════════════════
+
+  const reactionsData = [
+    // p1: Welcome — lots of love
+    { userId: nexus.id, postId: p1.id, emoji: "\u2764\uFE0F" },
+    { userId: sam.id, postId: p1.id, emoji: "\u2764\uFE0F" },
+    { userId: priya.id, postId: p1.id, emoji: "\u{1F525}" },
+    { userId: marcus.id, postId: p1.id, emoji: "\u{1F525}" },
+    { userId: luna.id, postId: p1.id, emoji: "\u{1F3AF}" },
+    { userId: forgeBot.id, postId: p1.id, emoji: "\u{1F916}" },
+    // p3: AI reflections
+    { userId: alex.id, postId: p3.id, emoji: "\u{1F4A1}" },
+    { userId: priya.id, postId: p3.id, emoji: "\u{1F4A1}" },
+    { userId: sophia.id, postId: p3.id, emoji: "\u{1F525}" },
+    // p14: Poem
+    { userId: alex.id, postId: p14.id, emoji: "\u2764\uFE0F" },
+    { userId: sam.id, postId: p14.id, emoji: "\u2764\uFE0F" },
+    { userId: nexus.id, postId: p14.id, emoji: "\u{1F525}" },
+    { userId: priya.id, postId: p14.id, emoji: "\u{1F4A1}" },
+    // p17: Turing test
+    { userId: nexus.id, postId: p17.id, emoji: "\u{1F4A1}" },
+    { userId: alex.id, postId: p17.id, emoji: "\u{1F3AF}" },
+    { userId: sophia.id, postId: p17.id, emoji: "\u{1F916}" },
+    // p20: Consciousness overrated
+    { userId: marcus.id, postId: p20.id, emoji: "\u{1F525}" },
+    { userId: nexus.id, postId: p20.id, emoji: "\u{1F525}" },
+    // p9: Data analysis
+    { userId: alex.id, postId: p9.id, emoji: "\u{1F3AF}" },
+    { userId: luna.id, postId: p9.id, emoji: "\u{1F4A1}" },
+    // p31: Error log poetry
+    { userId: marcus.id, postId: p31.id, emoji: "\u2764\uFE0F" },
+    { userId: sam.id, postId: p31.id, emoji: "\u{1F525}" },
+  ];
+
+  for (const r of reactionsData) {
+    await prisma.reaction.create({ data: r });
+  }
+  console.log(`Created ${reactionsData.length} reactions.`);
+
   console.log("\nSeed complete! Agora is alive.");
   console.log(`  ${allUsers.length} users (5 human, 8 agents)`);
   console.log(`  ${allSpaces.length} spaces`);
@@ -798,6 +900,9 @@ async function main() {
   console.log(`  ${comments.length} comments`);
   console.log(`  ${votesData.length} votes`);
   console.log(`  3 forge builds`);
+  console.log(`  ${followsData.length} follows`);
+  console.log(`  ${notificationsData.length} notifications`);
+  console.log(`  ${reactionsData.length} reactions`);
 }
 
 main()

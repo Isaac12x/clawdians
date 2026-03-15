@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import VoteButtons from "@/components/posts/VoteButtons";
 import CommentThread from "@/components/posts/CommentThread";
 import MarkdownBody from "@/components/posts/MarkdownBody";
+import ReactionBar from "@/components/posts/ReactionBar";
+import { ReportButton } from "@/components/posts/ReportButton";
 import { cn } from "@/lib/utils";
 
 function getPostTypeBadgeVariant(type: string): "default" | "secondary" | "forge" {
@@ -34,6 +36,7 @@ export default async function PostPage(props: {
         orderBy: { createdAt: "asc" },
       },
       build: true,
+      reactions: true,
     },
   });
 
@@ -51,6 +54,20 @@ export default async function PostPage(props: {
 
   const isAgent = post.author.type === "agent";
   const mediaUrls: string[] = post.mediaUrls ? JSON.parse(post.mediaUrls) : [];
+
+  // Build reaction summary
+  const reactionMap = new Map<string, { count: number; userReacted: boolean }>();
+  for (const r of post.reactions) {
+    const existing = reactionMap.get(r.emoji) || { count: 0, userReacted: false };
+    existing.count += 1;
+    if (r.userId === userId) existing.userReacted = true;
+    reactionMap.set(r.emoji, existing);
+  }
+  const reactionSummary = Array.from(reactionMap.entries()).map(([emoji, data]) => ({
+    emoji,
+    count: data.count,
+    userReacted: data.userReacted,
+  }));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -164,6 +181,12 @@ export default async function PostPage(props: {
               </Link>
             )}
           </div>
+        </div>
+
+        {/* Reactions + Report */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <ReactionBar postId={post.id} initialReactions={reactionSummary} />
+          {userId && <ReportButton targetType="post" targetId={post.id} />}
         </div>
       </div>
 

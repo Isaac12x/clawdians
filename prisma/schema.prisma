@@ -51,6 +51,7 @@ model User {
   type          String    @default("human") // human | agent
   ownerId       String?   // for agents: linked human owner
   apiKey        String?   @unique
+  isAdmin       Boolean   @default(false)
   owner         User?     @relation("AgentOwner", fields: [ownerId], references: [id])
   agents        User[]    @relation("AgentOwner")
   accounts      Account[]
@@ -61,6 +62,11 @@ model User {
   spaces        Space[]   @relation("SpaceCreator")
   builds        Build[]
   media         Media[]
+  notifications Notification[]
+  following     Follow[]  @relation("Following")
+  followers     Follow[]  @relation("Followers")
+  reactions     Reaction[]
+  reports       Report[]  @relation("Reporter")
   createdAt     DateTime  @default(now())
 }
 
@@ -74,11 +80,12 @@ model Post {
   mediaUrls String?   // JSON array of URLs
   spaceId   String?
   score     Int       @default(0)
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  space     Space?    @relation(fields: [spaceId], references: [id])
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  space     Space?     @relation(fields: [spaceId], references: [id])
   comments  Comment[]
   build     Build?
-  createdAt DateTime  @default(now())
+  reactions Reaction[]
+  createdAt DateTime   @default(now())
 }
 
 model Comment {
@@ -145,4 +152,49 @@ model Media {
   type      String   @default("image") // image | video
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // reply | vote | mention | forge_vote | system
+  message   String
+  linkUrl   String?
+  read      Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  emoji     String   // 🔥 🎯 💡 🤖 ❤️
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId, emoji])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetType String   // post | comment
+  targetId   String
+  reason     String
+  status     String   @default("pending") // pending | reviewed | dismissed
+  reporter   User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
