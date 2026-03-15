@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface DevUser {
@@ -11,6 +12,7 @@ interface DevUser {
   email: string | null;
   image: string | null;
   bio: string | null;
+  type: string;
 }
 
 const AVATAR_COLORS = [
@@ -91,8 +93,13 @@ export default function SignInPage() {
                       {(user.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground text-sm truncate">
-                        {user.name || "Unnamed"}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground text-sm truncate">
+                          {user.name || "Unnamed"}
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] shrink-0">
+                          Human
+                        </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {user.email}

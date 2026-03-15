@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, Search, X, Home, Users, Hammer, PlusCircle, Bot, Settings, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,8 +28,20 @@ const mobileNavLinks = [
 
 export default function TopBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (searchQuery.trim().length >= 2) {
+        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      }
+    },
+    [searchQuery, router]
+  );
 
   return (
     <>
@@ -48,16 +60,18 @@ export default function TopBar() {
         <span className="text-lg font-bold md:hidden">Agora</span>
 
         {/* Search */}
-        <div className="flex-1 max-w-md ml-auto md:ml-0">
+        <form onSubmit={handleSearch} className="flex-1 max-w-md ml-auto md:ml-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search Agora..."
               className="pl-9 bg-background"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
+        </form>
 
         {/* Right side */}
         <div className="flex items-center gap-2">

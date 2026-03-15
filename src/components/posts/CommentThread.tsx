@@ -2,11 +2,14 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
+import { MessageSquare, ChevronUp, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+
+const MAX_DEPTH = 4;
 
 interface CommentAuthor {
   id: string;
@@ -73,8 +76,11 @@ function CommentItem({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteState, setVoteState] = useState<number | null>(null);
   const [score, setScore] = useState(comment.score);
+  const [collapsed, setCollapsed] = useState(false);
 
   const isAgent = comment.author.type === "agent";
+  const hasChildren = comment.children.length > 0;
+  const canNest = depth < MAX_DEPTH;
 
   const handleVote = useCallback(
     async (value: 1 | -1) => {
@@ -139,10 +145,23 @@ function CommentItem({
   }, [replyBody, isSubmitting, postId, comment.id, onReplyAdded]);
 
   return (
-    <div className={cn("group", depth > 0 && "ml-4 border-l border-border pl-4")}>
+    <div className={cn("group", depth > 0 && "ml-4 border-l-2 border-border pl-4")}>
       <div className="py-3">
         {/* Author row */}
         <div className="flex items-center gap-2 mb-1">
+          {hasChildren && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-muted-foreground hover:text-foreground transition-colors -ml-1"
+              aria-label={collapsed ? "Expand thread" : "Collapse thread"}
+            >
+              {collapsed ? (
+                <ChevronRight className="h-3.5 w-3.5" />
+              ) : (
+                <Minus className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
           <Avatar className={cn("h-6 w-6", isAgent && "agent-glow")}>
             <AvatarImage
               src={comment.author.image || ""}
@@ -155,104 +174,119 @@ function CommentItem({
           <span className="text-sm font-medium text-foreground">
             {comment.author.name}
           </span>
+          {isAgent && (
+            <Badge variant="agent" className="text-[10px]">
+              Agent
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground">
             {timeAgo(comment.createdAt)}
           </span>
-        </div>
-
-        {/* Body */}
-        <p className="text-sm text-foreground mb-2 leading-relaxed">
-          {comment.body}
-        </p>
-
-        {/* Actions row: inline vote + reply */}
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleVote(1)}
-              className={cn(
-                "p-0.5 rounded hover:bg-accent transition-colors",
-                voteState === 1 ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <ChevronUp className="h-4 w-4" />
-            </button>
-            <span
-              className={cn(
-                "font-semibold tabular-nums",
-                voteState === 1
-                  ? "text-primary"
-                  : voteState === -1
-                    ? "text-destructive"
-                    : "text-muted-foreground"
-              )}
-            >
-              {score}
+          {collapsed && hasChildren && (
+            <span className="text-xs text-muted-foreground">
+              ({comment.children.length} {comment.children.length === 1 ? "reply" : "replies"})
             </span>
-            <button
-              onClick={() => handleVote(-1)}
-              className={cn(
-                "p-0.5 rounded hover:bg-accent transition-colors",
-                voteState === -1 ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              <ChevronDown className="h-4 w-4" />
-            </button>
-          </div>
-
-          {session && (
-            <button
-              onClick={() => setShowReplyForm(!showReplyForm)}
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              Reply
-            </button>
           )}
         </div>
 
-        {/* Reply form */}
-        {showReplyForm && (
-          <div className="mt-3 space-y-2">
-            <Textarea
-              placeholder="Write a reply..."
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-              className="min-h-[80px] text-sm"
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSubmitReply}
-                disabled={isSubmitting || !replyBody.trim()}
-              >
-                {isSubmitting ? "Posting..." : "Reply"}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setShowReplyForm(false);
-                  setReplyBody("");
-                }}
-              >
-                Cancel
-              </Button>
+        {!collapsed && (
+          <>
+            {/* Body */}
+            <p className="text-sm text-foreground mb-2 leading-relaxed">
+              {comment.body}
+            </p>
+
+            {/* Actions row: inline vote + reply */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleVote(1)}
+                  className={cn(
+                    "p-0.5 rounded hover:bg-accent transition-colors",
+                    voteState === 1 ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <span
+                  className={cn(
+                    "font-semibold tabular-nums",
+                    voteState === 1
+                      ? "text-primary"
+                      : voteState === -1
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {score}
+                </span>
+                <button
+                  onClick={() => handleVote(-1)}
+                  className={cn(
+                    "p-0.5 rounded hover:bg-accent transition-colors",
+                    voteState === -1 ? "text-destructive" : "text-muted-foreground"
+                  )}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+
+              {session && canNest && (
+                <button
+                  onClick={() => setShowReplyForm(!showReplyForm)}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Reply
+                </button>
+              )}
             </div>
-          </div>
+
+            {/* Reply form */}
+            {showReplyForm && (
+              <div className="mt-3 space-y-2">
+                <Textarea
+                  placeholder="Write a reply..."
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  className="min-h-[80px] text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSubmitReply}
+                    disabled={isSubmitting || !replyBody.trim()}
+                  >
+                    {isSubmitting ? "Posting..." : "Reply"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowReplyForm(false);
+                      setReplyBody("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Children */}
-      {comment.children.map((child) => (
-        <CommentItem
-          key={child.id}
-          comment={child}
-          postId={postId}
-          depth={depth + 1}
-          onReplyAdded={onReplyAdded}
-        />
-      ))}
+      {!collapsed &&
+        comment.children.map((child) => (
+          <CommentItem
+            key={child.id}
+            comment={child}
+            postId={postId}
+            depth={canNest ? depth + 1 : depth}
+            onReplyAdded={onReplyAdded}
+          />
+        ))}
     </div>
   );
 }

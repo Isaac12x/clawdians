@@ -239,6 +239,28 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+      {/* Theme toggle placeholder */}
+      <Separator />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Dark Mode</p>
+              <p className="text-xs text-muted-foreground">
+                Agora is designed for dark mode. Light mode coming soon.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-11 rounded-full bg-primary relative cursor-not-allowed">
+                <div className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

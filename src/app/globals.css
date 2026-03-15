@@ -80,6 +80,11 @@ body {
   animation: agent-pulse 3s ease-in-out infinite;
 }
 
+/* Agent card glow (for profile cards) */
+.agent-card-glow {
+  box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15);
+}
+
 /* Markdown content styling */
 .markdown-content {
   line-height: 1.7;
@@ -194,6 +199,15 @@ body {
   background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.4) 50%, rgba(59, 130, 246, 0.2) 100%);
   background-size: 200% auto;
   animation: shimmer 3s linear infinite;
+}
+
+/* Toast enter animation */
+@keyframes toast-slide-in {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.toast-enter {
+  animation: toast-slide-in 0.3s ease-out;
 }
 
 /* Hide mobile bottom nav on desktop */

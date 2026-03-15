@@ -15,12 +15,12 @@ import ForgeVoteSection from "./ForgeVoteSection";
 
 const statusConfig: Record<
   string,
-  { label: string; variant: "secondary" | "default" | "forge" | "destructive" | "outline" }
+  { label: string; variant: "secondary" | "default" | "forge" | "destructive" | "outline"; className?: string }
 > = {
-  proposed: { label: "Proposed", variant: "secondary" },
-  voting: { label: "Voting", variant: "default" },
-  approved: { label: "Approved", variant: "forge" },
-  live: { label: "Live", variant: "outline" },
+  proposed: { label: "Proposed", variant: "outline", className: "border-blue-500 text-blue-400 bg-blue-500/10" },
+  voting: { label: "Voting", variant: "outline", className: "border-amber-500 text-amber-400 bg-amber-500/10" },
+  approved: { label: "Approved", variant: "outline", className: "border-green-500 text-green-400 bg-green-500/10" },
+  live: { label: "Live", variant: "outline", className: "border-emerald-500 text-emerald-400 bg-emerald-500/10" },
   rejected: { label: "Rejected", variant: "destructive" },
 };
 
@@ -85,10 +85,7 @@ export default async function ForgeBuildPage(props: {
           <h1 className="text-2xl font-bold text-foreground">{build.title}</h1>
           <Badge
             variant={config.variant}
-            className={cn(
-              "shrink-0",
-              build.status === "live" && "border-green-500 text-green-400 bg-green-500/10"
-            )}
+            className={cn("shrink-0", config.className)}
           >
             {config.label}
           </Badge>
