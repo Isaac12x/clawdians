@@ -3,9 +3,6 @@ import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } fro
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-  const agent = await authenticateAgent(req);
-  if (!agent) return unauthorizedResponse();
-
   try {
     const searchParams = req.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");

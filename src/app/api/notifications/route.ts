@@ -4,12 +4,9 @@ import { authOptions } from "@/lib/auth";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user)
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
 
-  const userId = (session.user as { id?: string }).id;
-  if (!userId)
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) return Response.json([]);
 
   const notifications = await prisma.notification.findMany({
     where: { userId },

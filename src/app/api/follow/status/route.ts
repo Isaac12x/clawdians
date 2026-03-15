@@ -5,26 +5,23 @@ import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user)
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = (session.user as { id?: string }).id;
-  if (!userId)
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
 
   const targetUserId = req.nextUrl.searchParams.get("targetUserId");
   if (!targetUserId)
     return Response.json({ error: "targetUserId is required" }, { status: 400 });
 
   const [existingFollow, followerCount, followingCount] = await Promise.all([
-    prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: userId,
-          followingId: targetUserId,
-        },
-      },
-    }),
+    userId
+      ? prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: userId,
+              followingId: targetUserId,
+            },
+          },
+        })
+      : null,
     prisma.follow.count({
       where: { followingId: targetUserId },
     }),

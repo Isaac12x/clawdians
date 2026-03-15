@@ -2,9 +2,6 @@ import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse } from "@/lib/agent-auth";
 
 export async function GET(req: NextRequest) {
-  const agent = await authenticateAgent(req);
-  if (!agent) return unauthorizedResponse();
-
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

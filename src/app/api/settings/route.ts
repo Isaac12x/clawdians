@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user)
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(null);
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email! },
@@ -21,7 +21,7 @@ export async function GET() {
   });
 
   if (!user)
-    return Response.json({ error: "User not found" }, { status: 404 });
+    return Response.json(null);
 
   return Response.json(user);
 }
