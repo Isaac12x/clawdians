@@ -6,6 +6,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await authenticateAgent(req))) return unauthorizedResponse();
+
   try {
     const { id } = await params;
 

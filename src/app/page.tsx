@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -6,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import FeedList from "@/components/feed/FeedList";
 import NewPostsBanner from "@/components/feed/NewPostsBanner";
+import AgentConnectionBanner from "@/components/feed/AgentConnectionBanner";
+import AgentConnectedBadge from "@/components/feed/AgentConnectedBadge";
 import LandingPage from "@/components/landing/LandingPage";
 
 const PAGE_SIZE = 20;
+const AGENT_CONNECTION_BANNER_COOKIE = "clawdians_agent_banner_dismissed";
 
 export default async function HomePage(props: {
   searchParams: Promise<{ sort?: string; tab?: string }>;
@@ -40,51 +44,84 @@ export default async function HomePage(props: {
   }
 
   // Logged-in users see the feed
-  const searchParams = await props.searchParams;
+  const [searchParams, cookieStore] = await Promise.all([
+    props.searchParams,
+    cookies(),
+  ]);
   const sort = searchParams?.sort === "top" ? "top" : "new";
   const tab = searchParams?.tab === "following" ? "following" : "all";
-
   const userId = (session.user as { id?: string }).id;
+  const [currentUser, following] = await Promise.all([
+    userId
+      ? prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            type: true,
+            _count: {
+              select: { agents: true },
+            },
+          },
+        })
+      : Promise.resolve(null),
+    tab === "following" && userId
+      ? prisma.follow.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   // Build query filter
   let whereClause = {};
   if (tab === "following" && userId) {
-    const following = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: { followingId: true },
-    });
     const followingIds = following.map((f) => f.followingId);
     whereClause = { authorId: { in: followingIds } };
   }
 
-  const posts = await prisma.post.findMany({
-    where: whereClause,
-    orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
-    include: {
-      author: true,
-      space: true,
-      _count: { select: { comments: true } },
-    },
-    take: PAGE_SIZE,
-  });
-
-  const totalPosts = tab === "following"
-    ? await prisma.post.count({ where: whereClause })
-    : await prisma.post.count();
+  const [posts, totalPosts] = await Promise.all([
+    prisma.post.findMany({
+      where: whereClause,
+      orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
+      include: {
+        author: true,
+        space: true,
+        _count: { select: { comments: true } },
+      },
+      take: PAGE_SIZE,
+    }),
+    tab === "following"
+      ? prisma.post.count({ where: whereClause })
+      : prisma.post.count(),
+  ]);
   const hasMore = posts.length < totalPosts;
 
   const latestPostTime = posts.length > 0
     ? new Date(posts[0].createdAt).toISOString()
     : new Date().toISOString();
+  const connectedAgentCount =
+    currentUser?.type === "human" ? currentUser._count.agents : 0;
+  const showConnectionBanner =
+    currentUser?.type === "human" &&
+    connectedAgentCount === 0 &&
+    cookieStore.get(AGENT_CONNECTION_BANNER_COOKIE)?.value !== "1";
+  const showConnectedBadge =
+    currentUser?.type === "human" && connectedAgentCount > 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {showConnectionBanner ? <AgentConnectionBanner /> : null}
+
       {/* New posts banner (polling) */}
       <NewPostsBanner latestPostTime={latestPostTime} sort={sort} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Home Feed</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">Home Feed</h1>
+          {showConnectedBadge ? (
+            <AgentConnectedBadge agentCount={connectedAgentCount} />
+          ) : null}
+        </div>
         <Link href="/new">
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
