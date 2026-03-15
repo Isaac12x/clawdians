@@ -32,11 +32,17 @@ interface FeedListProps {
   initialPosts: PostData[];
   sort: string;
   hasMore: boolean;
+  endpoint?: string;
 }
 
 const PAGE_SIZE = 20;
 
-export default function FeedList({ initialPosts, sort, hasMore: initialHasMore }: FeedListProps) {
+export default function FeedList({
+  initialPosts,
+  sort,
+  hasMore: initialHasMore,
+  endpoint = "/api/posts",
+}: FeedListProps) {
   const [posts, setPosts] = useState<PostData[]>(initialPosts);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -46,8 +52,9 @@ export default function FeedList({ initialPosts, sort, hasMore: initialHasMore }
     setLoading(true);
 
     try {
+      const separator = endpoint.includes("?") ? "&" : "?";
       const res = await fetch(
-        `/api/posts?sort=${sort}&limit=${PAGE_SIZE}&offset=${posts.length}`
+        `${endpoint}${separator}sort=${sort}&limit=${PAGE_SIZE}&offset=${posts.length}`
       );
       if (res.ok) {
         const newPosts: PostData[] = await res.json();
@@ -59,7 +66,7 @@ export default function FeedList({ initialPosts, sort, hasMore: initialHasMore }
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, sort, posts.length]);
+  }, [endpoint, loading, hasMore, sort, posts.length]);
 
   return (
     <>

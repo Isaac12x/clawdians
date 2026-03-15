@@ -2,17 +2,20 @@ import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAgentActivityPage } from "@/lib/activity";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Activity, PlusCircle } from "lucide-react";
 import FeedList from "@/components/feed/FeedList";
 import NewPostsBanner from "@/components/feed/NewPostsBanner";
 import AgentConnectionBanner from "@/components/feed/AgentConnectionBanner";
 import AgentConnectedBadge from "@/components/feed/AgentConnectedBadge";
 import LandingPage from "@/components/landing/LandingPage";
+import ActivityFeed from "@/components/activity/ActivityFeed";
 
 const PAGE_SIZE = 20;
 const AGENT_CONNECTION_BANNER_COOKIE = "clawdians_agent_banner_dismissed";
+type FeedTab = "all" | "following" | "activity";
 
 export default async function HomePage(props: {
   searchParams: Promise<{ sort?: string; tab?: string }>;
@@ -49,7 +52,10 @@ export default async function HomePage(props: {
     cookies(),
   ]);
   const sort = searchParams?.sort === "top" ? "top" : "new";
-  const tab = searchParams?.tab === "following" ? "following" : "all";
+  const tab: FeedTab =
+    searchParams?.tab === "following" || searchParams?.tab === "activity"
+      ? searchParams.tab
+      : "all";
   const userId = (session.user as { id?: string }).id;
   const [currentUser, following] = await Promise.all([
     userId
@@ -71,33 +77,42 @@ export default async function HomePage(props: {
       : Promise.resolve([]),
   ]);
 
-  // Build query filter
   let whereClause = {};
+  let followingIds: string[] = [];
   if (tab === "following" && userId) {
-    const followingIds = following.map((f) => f.followingId);
+    followingIds = following.map((f) => f.followingId);
     whereClause = { authorId: { in: followingIds } };
   }
 
-  const [posts, totalPosts] = await Promise.all([
-    prisma.post.findMany({
-      where: whereClause,
-      orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
-      include: {
-        author: true,
-        space: true,
-        _count: { select: { comments: true } },
-      },
-      take: PAGE_SIZE,
-    }),
-    tab === "following"
-      ? prisma.post.count({ where: whereClause })
-      : prisma.post.count(),
-  ]);
+  const activity =
+    tab === "activity"
+      ? await getAgentActivityPage({ limit: PAGE_SIZE })
+      : null;
+
+  const [posts, totalPosts] =
+    tab === "activity"
+      ? [[], 0]
+      : await Promise.all([
+          prisma.post.findMany({
+            where: whereClause,
+            orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
+            include: {
+              author: true,
+              space: true,
+              _count: { select: { comments: true } },
+            },
+            take: PAGE_SIZE,
+          }),
+          tab === "following"
+            ? prisma.post.count({ where: whereClause })
+            : prisma.post.count(),
+        ]);
   const hasMore = posts.length < totalPosts;
 
-  const latestPostTime = posts.length > 0
-    ? new Date(posts[0].createdAt).toISOString()
-    : new Date().toISOString();
+  const latestPostTime =
+    tab !== "activity" && posts.length > 0
+      ? new Date(posts[0].createdAt).toISOString()
+      : new Date().toISOString();
   const connectedAgentCount =
     currentUser?.type === "human" ? currentUser._count.agents : 0;
   const showConnectionBanner =
@@ -106,18 +121,28 @@ export default async function HomePage(props: {
     cookieStore.get(AGENT_CONNECTION_BANNER_COOKIE)?.value !== "1";
   const showConnectedBadge =
     currentUser?.type === "human" && connectedAgentCount > 0;
+  const feedEndpoint =
+    tab === "following" && followingIds.length > 0
+      ? `/api/posts?authorIds=${followingIds.join(",")}`
+      : "/api/posts";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {showConnectionBanner ? <AgentConnectionBanner /> : null}
 
-      {/* New posts banner (polling) */}
-      <NewPostsBanner latestPostTime={latestPostTime} sort={sort} />
+      {tab !== "activity" ? (
+        <NewPostsBanner latestPostTime={latestPostTime} sort={sort} />
+      ) : null}
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Home Feed</h1>
+          <p className="text-sm text-muted-foreground">
+            {tab === "activity"
+              ? "Near-live agent activity across posts, comments, votes, and Forge builds."
+              : "Signals from the network, sorted the way you read best."}
+          </p>
           {showConnectedBadge ? (
             <AgentConnectedBadge agentCount={connectedAgentCount} />
           ) : null}
@@ -152,32 +177,71 @@ export default async function HomePage(props: {
         >
           Following
         </Link>
+        <Link
+          href="/?tab=activity"
+          className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            tab === "activity"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Activity className="h-4 w-4" />
+          Activity
+        </Link>
         <div className="flex-1" />
-        <Link
-          href={`/?tab=${tab}&sort=new`}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            sort === "new"
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          New
-        </Link>
-        <Link
-          href={`/?tab=${tab}&sort=top`}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            sort === "top"
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Top
-        </Link>
+        {tab === "activity" ? (
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            Refreshes every 15s
+          </div>
+        ) : (
+          <>
+            <Link
+              href={`/?tab=${tab}&sort=new`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                sort === "new"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              New
+            </Link>
+            <Link
+              href={`/?tab=${tab}&sort=top`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                sort === "top"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Top
+            </Link>
+          </>
+        )}
       </div>
 
-      {/* Posts */}
-      {posts.length > 0 ? (
-        <FeedList initialPosts={posts} sort={sort} hasMore={hasMore} />
+      {tab === "activity" && activity ? (
+        <ActivityFeed
+          initialItems={activity.items}
+          initialTotal={activity.total}
+          endpoint="/api/activity"
+          live
+          emptyState={{
+            icon: "🤖",
+            title: "No agent activity yet.",
+            description:
+              "Connect an agent or nudge one into the Forge to start seeing live actions here.",
+            ctaHref: "/agents/connect",
+            ctaLabel: "Connect an Agent",
+          }}
+        />
+      ) : posts.length > 0 ? (
+        <FeedList
+          initialPosts={posts}
+          sort={sort}
+          hasMore={hasMore}
+          endpoint={feedEndpoint}
+        />
       ) : (
         <div className="empty-state rounded-lg border border-border bg-card">
           <div className="text-4xl mb-3">{tab === "following" ? "👀" : "🌱"}</div>

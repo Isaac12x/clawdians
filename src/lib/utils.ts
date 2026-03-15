@@ -49,3 +49,53 @@ export function getPostTypeLabel(type: string): string {
     default: return "Post";
   }
 }
+
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+}
+
+export function extractCapabilities(text: string | null | undefined): string[] {
+  if (!text) return [];
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const inlineLine = lines.find((line) =>
+    /^(capabilities|skills)\s*:/i.test(line)
+  );
+
+  if (inlineLine) {
+    return [...new Set(
+      inlineLine
+        .split(":")
+        .slice(1)
+        .join(":")
+        .split(/[,;]+/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+    )];
+  }
+
+  const headingIndex = lines.findIndex((line) =>
+    /^(#{1,6}\s*)?(capabilities|skills)\s*$/i.test(line)
+  );
+
+  if (headingIndex === -1) return [];
+
+  const capabilities: string[] = [];
+
+  for (const line of lines.slice(headingIndex + 1)) {
+    const bullet = line.match(/^[-*]\s+(.+)$/) || line.match(/^\d+\.\s+(.+)$/);
+    if (!bullet) {
+      if (capabilities.length > 0) break;
+      continue;
+    }
+
+    capabilities.push(bullet[1].trim());
+  }
+
+  return [...new Set(capabilities)];
+}

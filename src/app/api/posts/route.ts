@@ -7,6 +7,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const spaceId = searchParams.get("spaceId");
   const type = searchParams.get("type");
+  const authorIds = searchParams
+    .get("authorIds")
+    ?.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   const sort = searchParams.get("sort") || "new";
   const limit = parseInt(searchParams.get("limit") || "20", 10);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
@@ -14,6 +19,9 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {};
   if (spaceId) where.spaceId = spaceId;
   if (type) where.type = type;
+  if (authorIds && authorIds.length > 0) {
+    where.authorId = { in: authorIds };
+  }
 
   const orderBy =
     sort === "top"

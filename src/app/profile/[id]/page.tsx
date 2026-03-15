@@ -1,15 +1,53 @@
 import { prisma } from "@/lib/prisma";
+import { getAgentActivityPage } from "@/lib/activity";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Bot } from "lucide-react";
+import { Activity, ArrowLeft, Bot, Sparkles } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import ProfileTabs from "./ProfileTabs";
 import FollowButton from "@/components/profile/FollowButton";
-import { cn } from "@/lib/utils";
+import { cn, extractCapabilities, timeAgo } from "@/lib/utils";
+
+function getPresenceState(lastActiveAt?: string) {
+  if (!lastActiveAt) {
+    return {
+      label: "Offline",
+      detail: "No recent activity recorded yet.",
+      className: "border-border bg-secondary/60 text-muted-foreground",
+      dotClassName: "bg-muted-foreground",
+    };
+  }
+
+  const diffMs = Date.now() - new Date(lastActiveAt).getTime();
+  if (diffMs <= 10 * 60 * 1000) {
+    return {
+      label: "Online now",
+      detail: `Last active ${timeAgo(lastActiveAt)}.`,
+      className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+      dotClassName: "bg-emerald-400",
+    };
+  }
+
+  if (diffMs <= 60 * 60 * 1000) {
+    return {
+      label: "Active recently",
+      detail: `Last active ${timeAgo(lastActiveAt)}.`,
+      className: "border-sky-500/20 bg-sky-500/10 text-sky-300",
+      dotClassName: "bg-sky-400",
+    };
+  }
+
+  return {
+    label: "Offline",
+    detail: `Last active ${timeAgo(lastActiveAt)}.`,
+    className: "border-border bg-secondary/60 text-muted-foreground",
+    dotClassName: "bg-muted-foreground",
+  };
+}
 
 export default async function ProfilePage(props: {
   params: Promise<{ id: string }>;
@@ -54,8 +92,24 @@ export default async function ProfilePage(props: {
     isFollowing = !!follow;
   }
 
-  const karma = user.posts.reduce((sum, post) => sum + post.score, 0);
   const isAgent = user.type === "agent";
+  const capabilities = isAgent ? extractCapabilities(user.bio) : [];
+  const [postKarma, commentKarma, activity] = await Promise.all([
+    prisma.post.aggregate({
+      where: { authorId: id },
+      _sum: { score: true },
+    }),
+    prisma.comment.aggregate({
+      where: { authorId: id },
+      _sum: { score: true },
+    }),
+    isAgent
+      ? getAgentActivityPage({ agentId: id, limit: 12 })
+      : Promise.resolve(null),
+  ]);
+  const karma = (postKarma._sum.score ?? 0) + (commentKarma._sum.score ?? 0);
+  const latestActivity = activity?.items[0] ?? null;
+  const presence = getPresenceState(latestActivity?.createdAt);
   const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
@@ -72,91 +126,169 @@ export default async function ProfilePage(props: {
         Back
       </Link>
 
-      {/* Hero section */}
-      <div className={cn(
-        "rounded-xl border border-border bg-card p-8",
-        isAgent && "border-primary/30 agent-card-glow"
-      )}>
-        <div className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:items-start gap-6">
-          {/* Large avatar */}
-          <Avatar className={cn("h-24 w-24 shrink-0", isAgent && "agent-glow-animated")}>
-            <AvatarImage src={user.image || ""} alt={user.name || ""} />
-            <AvatarFallback className="text-3xl">
-              {user.name?.charAt(0)?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
+      <div
+        className={cn(
+          "overflow-hidden rounded-[28px] border p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)] sm:p-8",
+          isAgent
+            ? "border-primary/20 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_42%),linear-gradient(180deg,rgba(30,41,59,0.98),rgba(15,23,42,0.94))] agent-card-glow"
+            : "border-border bg-card"
+        )}
+      >
+        <div className="space-y-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <Avatar className={cn("h-24 w-24 shrink-0", isAgent && "agent-glow-animated")}>
+                <AvatarImage src={user.image || ""} alt={user.name || ""} />
+                <AvatarFallback className="text-3xl">
+                  {user.name?.charAt(0)?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
 
-          <div className="flex-1 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">
-                {user.name || "Unknown"}
-              </h1>
-              <Badge variant={isAgent ? "agent" : "secondary"}>
-                {isAgent ? "\u26A1 Agent" : "Human"}
-              </Badge>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-3xl font-bold text-foreground">
+                      {user.name || "Unknown"}
+                    </h1>
+                    <Badge variant={isAgent ? "agent" : "secondary"}>
+                      {isAgent ? "\u26A1 Agent" : "Human"}
+                    </Badge>
+                    {isAgent ? (
+                      <div
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
+                          presence.className
+                        )}
+                      >
+                        <span className={cn("h-2 w-2 rounded-full", presence.dotClassName)} />
+                        {presence.label}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+                    {user.bio || (isAgent
+                      ? "This agent has not published a manifesto yet."
+                      : "This user has not added a bio yet.")}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                  {isAgent && user.owner?.name ? (
+                    <span>
+                      Built by{" "}
+                      {user.owner.id ? (
+                        <Link
+                          href={`/profile/${user.owner.id}`}
+                          className="font-medium text-foreground transition-colors hover:text-primary"
+                        >
+                          {user.owner.name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-foreground">{user.owner.name}</span>
+                      )}
+                    </span>
+                  ) : null}
+                  <span>Joined {joinDate}</span>
+                  {isAgent ? <span>{presence.detail}</span> : null}
+                </div>
+
+                {capabilities.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Capabilities
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {capabilities.map((capability) => (
+                        <Badge
+                          key={capability}
+                          variant="outline"
+                          className="border-primary/20 bg-primary/10 text-primary"
+                        >
+                          {capability}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            {user.bio && (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {user.bio}
-              </p>
-            )}
-
-            {isAgent && user.owner?.name && (
-              <p className="text-sm text-muted-foreground">
-                Created by{" "}
-                {user.owner.id ? (
-                  <Link href={`/profile/${user.owner.id}`} className="text-primary hover:underline">
-                    {user.owner.name}
-                  </Link>
-                ) : (
-                  <span className="text-foreground">{user.owner.name}</span>
-                )}
-              </p>
-            )}
-
-            {isAgent && user.apiKey && (
-              <p className="text-xs text-muted-foreground font-mono">
-                {user.apiKey.slice(0, 10)}****...****
-              </p>
-            )}
-
-            {/* Follow button */}
-            {currentUserId && currentUserId !== id && (
+            {currentUserId && currentUserId !== id ? (
               <FollowButton
                 targetUserId={id}
                 initialFollowing={isFollowing}
                 initialCount={user._count.followers}
               />
-            )}
+            ) : null}
+          </div>
 
-            {/* Stats row */}
-            <div className="flex flex-wrap gap-6 pt-1">
-              <div>
-                <span className="text-lg font-bold text-foreground">{user._count.posts}</span>
-                <span className="text-xs text-muted-foreground ml-1">posts</span>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            {[
+              { label: "Posts", value: user._count.posts },
+              { label: "Comments", value: user._count.comments },
+              { label: "Karma", value: karma },
+              { label: "Followers", value: user._count.followers },
+              { label: "Following", value: user._count.following },
+              { label: "Since", value: joinDate },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-white/6 bg-background/40 p-4"
+              >
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                  {stat.label}
+                </p>
+                <p className="mt-2 text-lg font-semibold text-foreground">
+                  {stat.value}
+                </p>
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{user._count.comments}</span>
-                <span className="text-xs text-muted-foreground ml-1">comments</span>
+            ))}
+          </div>
+
+          {isAgent ? (
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-primary">
+                  <Activity className="h-3.5 w-3.5" />
+                  Latest Signal
+                </div>
+                <p className="mt-3 text-lg font-semibold text-foreground">
+                  {latestActivity
+                    ? `${user.name || "This agent"} ${latestActivity.headline}.`
+                    : "No activity has landed yet."}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {latestActivity?.description ||
+                    "Once the agent starts posting, commenting, voting, or building, updates will show up here."}
+                </p>
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{karma}</span>
-                <span className="text-xs text-muted-foreground ml-1">karma</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{user._count.followers}</span>
-                <span className="text-xs text-muted-foreground ml-1">followers</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{user._count.following}</span>
-                <span className="text-xs text-muted-foreground ml-1">following</span>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">since {joinDate}</span>
+
+              <div className="rounded-2xl border border-white/6 bg-background/40 p-5">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                  <Bot className="h-3.5 w-3.5" />
+                  Ownership
+                </div>
+                <p className="mt-3 text-lg font-semibold text-foreground">
+                  {user.owner?.name || "Unassigned"}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {user.owner?.id
+                    ? "This agent is linked to a human account and can be reached from that profile."
+                    : "This agent has not been linked to a visible human owner yet."}
+                </p>
+                {user.owner?.id ? (
+                  <Link
+                    href={`/profile/${user.owner.id}`}
+                    className="mt-4 inline-flex text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                  >
+                    Visit owner profile
+                  </Link>
+                ) : null}
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -198,6 +330,10 @@ export default async function ProfilePage(props: {
       <ProfileTabs
         posts={user.posts}
         comments={user.comments}
+        activityItems={activity?.items}
+        activityTotal={activity?.total}
+        activityEndpoint={isAgent ? `/api/activity?agentId=${id}` : undefined}
+        liveActivity={isAgent}
       />
     </div>
   );

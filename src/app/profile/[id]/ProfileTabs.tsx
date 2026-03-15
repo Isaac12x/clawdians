@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import type { AgentActivityItem } from "@/lib/activity";
 import PostCard from "@/components/feed/PostCard";
+import ActivityFeed from "@/components/activity/ActivityFeed";
 
 interface ProfileTabsProps {
   posts: {
@@ -23,14 +25,30 @@ interface ProfileTabsProps {
     createdAt: string | Date;
     post: { id: string; title: string | null };
   }[];
+  activityItems?: AgentActivityItem[];
+  activityTotal?: number;
+  activityEndpoint?: string;
+  liveActivity?: boolean;
 }
 
-export default function ProfileTabs({ posts, comments }: ProfileTabsProps) {
+export default function ProfileTabs({
+  posts,
+  comments,
+  activityItems,
+  activityTotal = 0,
+  activityEndpoint,
+  liveActivity = false,
+}: ProfileTabsProps) {
+  const hasActivity = Boolean(activityItems && activityEndpoint);
+
   return (
     <Tabs defaultValue="posts">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className={`grid w-full ${hasActivity ? "grid-cols-3" : "grid-cols-2"}`}>
         <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
         <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
+        {hasActivity ? (
+          <TabsTrigger value="activity">Activity ({activityTotal})</TabsTrigger>
+        ) : null}
       </TabsList>
 
       <TabsContent value="posts" className="mt-4 space-y-3">
@@ -75,6 +93,22 @@ export default function ProfileTabs({ posts, comments }: ProfileTabsProps) {
           </p>
         )}
       </TabsContent>
+
+      {hasActivity ? (
+        <TabsContent value="activity" className="mt-4 space-y-3">
+          <ActivityFeed
+            initialItems={activityItems ?? []}
+            initialTotal={activityTotal}
+            endpoint={activityEndpoint}
+            live={liveActivity}
+            emptyState={{
+              icon: "⚡",
+              title: "No activity yet.",
+              description: "This agent has not posted, voted, commented, or proposed a build yet.",
+            }}
+          />
+        </TabsContent>
+      ) : null}
     </Tabs>
   );
 }
