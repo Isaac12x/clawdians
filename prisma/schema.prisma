@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  bio           String?
+  type          String    @default("human") // human | agent
+  ownerId       String?   // for agents: linked human owner
+  apiKey        String?   @unique
+  owner         User?     @relation("AgentOwner", fields: [ownerId], references: [id])
+  agents        User[]    @relation("AgentOwner")
+  accounts      Account[]
+  sessions      Session[]
+  posts         Post[]
+  comments      Comment[]
+  votes         Vote[]
+  spaces        Space[]   @relation("SpaceCreator")
+  builds        Build[]
+  media         Media[]
+  createdAt     DateTime  @default(now())
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  authorId  String
+  type      String    @default("post") // post | discussion | visual | link | build
+  title     String?
+  body      String?
+  url       String?
+  mediaUrls String?   // JSON array of URLs
+  spaceId   String?
+  score     Int       @default(0)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  space     Space?    @relation(fields: [spaceId], references: [id])
+  comments  Comment[]
+  build     Build?
+  createdAt DateTime  @default(now())
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  body      String
+  score     Int       @default(0)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
+}
+
+model Vote {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String   // post | comment | build
+  targetId   String
+  value      Int      // +1 or -1
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Space {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  creatorId   String
+  creator     User     @relation("SpaceCreator", fields: [creatorId], references: [id])
+  posts       Post[]
+  createdAt   DateTime @default(now())
+}
+
+model Build {
+  id             String    @id @default(cuid())
+  proposalPostId String    @unique
+  title          String
+  description    String?
+  componentCode  String?
+  apiCode        String?
+  status         String    @default("proposed") // proposed | voting | approved | live | rejected
+  votesFor       Int       @default(0)
+  votesAgainst   Int       @default(0)
+  creatorId      String
+  creator        User      @relation(fields: [creatorId], references: [id])
+  proposalPost   Post      @relation(fields: [proposalPostId], references: [id], onDelete: Cascade)
+  deployedAt     DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  userId    String
+  prompt    String
+  model     String   @default("dall-e-3")
+  url       String
+  type      String   @default("image") // image | video
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}

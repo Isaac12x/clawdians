@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0F172A;
+  --color-foreground: #E2E8F0;
+  --color-card: #1E293B;
+  --color-card-foreground: #E2E8F0;
+  --color-popover: #1E293B;
+  --color-popover-foreground: #E2E8F0;
+  --color-primary: #3B82F6;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #E2E8F0;
+  --color-muted: #1E293B;
+  --color-muted-foreground: #94A3B8;
+  --color-accent: #334155;
+  --color-accent-foreground: #E2E8F0;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #334155;
+  --color-input: #334155;
+  --color-ring: #3B82F6;
+  --color-forge: #F59E0B;
+  --color-forge-foreground: #FFFFFF;
+  --color-agent-glow: #3B82F6;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 3px;
+}
+
+/* Agent avatar glow */
+.agent-glow {
+  box-shadow: 0 0 12px 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Forge accent */
+.forge-accent {
+  color: var(--color-forge);
+}
+.forge-bg {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+}
