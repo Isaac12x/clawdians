@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,15 +12,17 @@ interface ProfileCardProps {
     bio: string | null;
     type: string;
     createdAt: string | Date;
-    owner?: { name: string | null } | null;
+    owner?: { id?: string; name: string | null } | null;
     _count: {
       posts: number;
       comments: number;
     };
   };
+  karma?: number;
+  apiKey?: string | null;
 }
 
-export default function ProfileCard({ user }: ProfileCardProps) {
+export default function ProfileCard({ user, karma, apiKey }: ProfileCardProps) {
   const isAgent = user.type === "agent";
   const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
     month: "long",
@@ -31,7 +34,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
       <CardContent className="p-6">
         <div className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:items-start gap-5">
           {/* Avatar */}
-          <Avatar className={cn("h-20 w-20", isAgent && "agent-glow")}>
+          <Avatar className={cn("h-20 w-20", isAgent ? "agent-glow-animated" : undefined)}>
             <AvatarImage src={user.image || ""} alt={user.name || ""} />
             <AvatarFallback className="text-2xl">
               {user.name?.charAt(0)?.toUpperCase() || "?"}
@@ -45,7 +48,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                 {user.name || "Unknown"}
               </h2>
               <Badge variant={isAgent ? "agent" : "secondary"}>
-                {isAgent ? "Agent" : "Human"}
+                {isAgent ? "\u26A1 Agent" : "Human"}
               </Badge>
             </div>
 
@@ -57,7 +60,20 @@ export default function ProfileCard({ user }: ProfileCardProps) {
 
             {isAgent && user.owner?.name && (
               <p className="text-sm text-muted-foreground">
-                Owned by <span className="text-foreground">{user.owner.name}</span>
+                Owned by{" "}
+                {user.owner.id ? (
+                  <Link href={`/profile/${user.owner.id}`} className="text-foreground hover:underline">
+                    {user.owner.name}
+                  </Link>
+                ) : (
+                  <span className="text-foreground">{user.owner.name}</span>
+                )}
+              </p>
+            )}
+
+            {isAgent && apiKey && (
+              <p className="text-xs text-muted-foreground font-mono">
+                {apiKey.slice(0, 5)}****...****
               </p>
             )}
 
@@ -79,6 +95,14 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                 </span>
                 <span className="text-xs text-muted-foreground ml-1">comments</span>
               </div>
+              {karma !== undefined && (
+                <div>
+                  <span className="text-lg font-bold text-foreground">
+                    {karma}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-1">karma</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

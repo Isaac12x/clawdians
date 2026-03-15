@@ -26,6 +26,21 @@ export const authOptions: NextAuthOptions = {
         return { id: user.id, name: user.name, email: user.email, image: user.image };
       },
     }),
+    CredentialsProvider({
+      id: "dev-credentials",
+      name: "Dev Login",
+      credentials: {
+        email: { label: "Email", type: "email" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email) return null;
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user || user.type !== "human") return null;
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
+    }),
   ],
   session: { strategy: "jwt" },
   callbacks: {

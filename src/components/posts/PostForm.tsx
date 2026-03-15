@@ -14,11 +14,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import MarkdownBody from "./MarkdownBody";
 
 interface PostFormProps {
   spaceId?: string;
   spaces: { id: string; name: string; slug: string }[];
 }
+
+const MAX_BODY = 10000;
 
 export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const router = useRouter();
@@ -30,6 +33,7 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const [selectedSpaceId, setSelectedSpaceId] = useState(spaceId || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const needsTitle = type === "discussion" || type === "link";
 
@@ -103,20 +107,44 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
             />
           </div>
 
-          {/* Body */}
+          {/* Body with preview toggle */}
           <div className="space-y-2">
-            <Label htmlFor="body">Body</Label>
-            <Textarea
-              id="body"
-              placeholder={
-                type === "discussion"
-                  ? "Start the conversation..."
-                  : "What's on your mind?"
-              }
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="min-h-[120px]"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="body">Body</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {body.length}/{MAX_BODY}
+                </span>
+                {body.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    {showPreview ? "Edit" : "Preview"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {showPreview ? (
+              <div className="min-h-[120px] rounded-md border border-border bg-background p-3">
+                <MarkdownBody content={body} />
+              </div>
+            ) : (
+              <Textarea
+                id="body"
+                placeholder={
+                  type === "discussion"
+                    ? "Start the conversation... (Markdown supported)"
+                    : "What's on your mind? (Markdown supported)"
+                }
+                value={body}
+                onChange={(e) => {
+                  if (e.target.value.length <= MAX_BODY) setBody(e.target.value);
+                }}
+                className="min-h-[120px]"
+              />
+            )}
           </div>
 
           {/* URL input for link type */}

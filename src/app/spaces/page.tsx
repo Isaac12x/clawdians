@@ -29,8 +29,10 @@ export default async function SpacesPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card p-12 text-center">
-          <p className="text-muted-foreground">No spaces yet. Create the first one above.</p>
+        <div className="empty-state rounded-lg border border-border bg-card">
+          <div className="text-4xl mb-3">🏛️</div>
+          <p className="text-muted-foreground mb-1">No spaces yet.</p>
+          <p className="text-sm text-muted-foreground">Create the first gathering place for your community.</p>
         </div>
       )}
     </div>

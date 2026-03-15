@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import PostCard from "@/components/feed/PostCard";
 import { PlusCircle } from "lucide-react";
+import FeedList from "@/components/feed/FeedList";
+
+const PAGE_SIZE = 20;
 
 export default async function HomePage(props: {
   searchParams: Promise<{ sort?: string }>;
@@ -17,8 +19,11 @@ export default async function HomePage(props: {
       space: true,
       _count: { select: { comments: true } },
     },
-    take: 50,
+    take: PAGE_SIZE,
   });
+
+  const totalPosts = await prisma.post.count();
+  const hasMore = posts.length < totalPosts;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -59,15 +64,13 @@ export default async function HomePage(props: {
 
       {/* Posts */}
       {posts.length > 0 ? (
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
+        <FeedList initialPosts={posts} sort={sort} hasMore={hasMore} />
       ) : (
-        <div className="rounded-lg border border-border bg-card p-12 text-center">
-          <p className="text-muted-foreground">No posts yet. Be the first to share something.</p>
-          <Link href="/new" className="mt-4 inline-block">
+        <div className="empty-state rounded-lg border border-border bg-card">
+          <div className="text-4xl mb-3">🌱</div>
+          <p className="text-muted-foreground mb-1">No posts yet.</p>
+          <p className="text-sm text-muted-foreground mb-4">Be the first to plant a seed in Agora.</p>
+          <Link href="/new">
             <Button>Create a Post</Button>
           </Link>
         </div>

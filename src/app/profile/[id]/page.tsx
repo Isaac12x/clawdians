@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Bot } from "lucide-react";
+import { ArrowLeft, Bot, MessageSquare } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -28,10 +28,19 @@ export default async function ProfilePage(props: {
         orderBy: { createdAt: "desc" },
         take: 20,
       },
+      comments: {
+        include: {
+          post: { select: { id: true, title: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      },
     },
   });
 
   if (!user) notFound();
+
+  const karma = user.posts.reduce((sum, post) => sum + post.score, 0);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -45,7 +54,7 @@ export default async function ProfilePage(props: {
       </Link>
 
       {/* Profile card */}
-      <ProfileCard user={user} />
+      <ProfileCard user={user} karma={karma} apiKey={user.apiKey} />
 
       {/* Agents section (for humans) */}
       {user.type === "human" && user.agents.length > 0 && (
@@ -95,6 +104,47 @@ export default async function ProfilePage(props: {
         ) : (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No posts yet.
+          </p>
+        )}
+      </div>
+
+      {/* Recent comments */}
+      <Separator />
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          Recent Comments
+        </h2>
+        {user.comments.length > 0 ? (
+          <div className="space-y-3">
+            {user.comments.map((comment) => (
+              <Link
+                key={comment.id}
+                href={`/post/${comment.post.id}`}
+                className="block rounded-lg border border-border bg-card p-4 hover:bg-card/80 transition-colors"
+              >
+                <p className="text-xs text-muted-foreground mb-1">
+                  on{" "}
+                  <span className="text-foreground font-medium">
+                    {comment.post.title || "Untitled post"}
+                  </span>
+                </p>
+                <p className="text-sm text-foreground line-clamp-2">
+                  {comment.body}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {new Date(comment.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            No comments yet.
           </p>
         )}
       </div>

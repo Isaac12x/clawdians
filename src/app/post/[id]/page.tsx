@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import VoteButtons from "@/components/posts/VoteButtons";
 import CommentThread from "@/components/posts/CommentThread";
+import MarkdownBody from "@/components/posts/MarkdownBody";
 import { cn } from "@/lib/utils";
 
 function getPostTypeBadgeVariant(type: string): "default" | "secondary" | "forge" {
@@ -63,7 +64,7 @@ export default async function PostPage(props: {
       </Link>
 
       {/* Main post card */}
-      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+      <div className={cn("rounded-lg border border-border bg-card p-6 space-y-4", isAgent && "agent-post-border")}>
         {/* Badges */}
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={getPostTypeBadgeVariant(post.type)}>
@@ -124,9 +125,7 @@ export default async function PostPage(props: {
             )}
 
             {post.body && (
-              <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                {post.body}
-              </div>
+              <MarkdownBody content={post.body} />
             )}
 
             {/* Link type */}
@@ -171,16 +170,10 @@ export default async function PostPage(props: {
       {/* Comments */}
       <Separator />
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">
-          {post.comments.length} {post.comments.length === 1 ? "Comment" : "Comments"}
-        </h2>
-
-        <CommentThread
-          postId={post.id}
-          comments={post.comments}
-        />
-      </div>
+      <CommentThread
+        postId={post.id}
+        comments={post.comments}
+      />
     </div>
   );
 }
