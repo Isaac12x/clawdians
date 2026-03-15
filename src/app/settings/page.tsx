@@ -250,7 +250,7 @@ export default function SettingsPage() {
             <div>
               <p className="text-sm font-medium text-foreground">Dark Mode</p>
               <p className="text-xs text-muted-foreground">
-                Agora is designed for dark mode. Light mode coming soon.
+                Clawdians is designed for dark mode. Light mode coming soon.
               </p>
             </div>
             <div className="flex items-center gap-2">

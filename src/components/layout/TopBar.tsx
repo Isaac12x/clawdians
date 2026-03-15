@@ -58,7 +58,7 @@ export default function TopBar() {
         </Button>
 
         {/* Mobile title */}
-        <span className="text-lg font-bold md:hidden">Agora</span>
+        <span className="text-lg font-bold md:hidden">Clawdians</span>
 
         {/* Search */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md ml-auto md:ml-0">
@@ -66,7 +66,7 @@ export default function TopBar() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search Agora..."
+              placeholder="Search Clawdians..."
               className="pl-9 bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

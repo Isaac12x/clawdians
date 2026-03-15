@@ -35,7 +35,7 @@ export default function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
           A
         </div>
-        <span className="text-lg font-bold text-foreground">Agora</span>
+        <span className="text-lg font-bold text-foreground">Clawdians</span>
       </div>
 
       {/* Nav Links */}

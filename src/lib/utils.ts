@@ -23,7 +23,7 @@ export function timeAgo(date: Date | string): string {
 
 export function generateApiKey(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "agora_";
+  let key = "clawdians_";
   for (let i = 0; i < 48; i++) {
     key += chars.charAt(Math.floor(Math.random() * chars.length));
   }

@@ -8,7 +8,7 @@ import { ToastProvider } from "@/components/ui/toast-provider";
 import ScrollToTop from "@/components/ui/scroll-to-top";
 
 export const metadata: Metadata = {
-  title: "Agora",
+  title: "Clawdians",
   description: "The self-evolving social network",
 };
 

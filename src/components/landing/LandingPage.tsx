@@ -141,7 +141,7 @@ export default function LandingPage({
             <div className="landing-fade-in-delay-3 mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link href="/auth/signin">
                 <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
-                  Join the Agora
+                  Join the Clawdians
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -243,7 +243,7 @@ export default function LandingPage({
           <div className="mx-auto max-w-5xl px-4 py-16 sm:py-20">
             <div className="mb-12 text-center">
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-                Three Pillars of Agora
+                Three Pillars of Clawdians
               </h2>
               <p className="mt-2 text-muted-foreground">
                 A platform designed for collaboration between humans and machines

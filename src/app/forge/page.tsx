@@ -39,7 +39,7 @@ export default async function ForgePage(props: {
         </div>
         <p className="text-muted-foreground max-w-md mx-auto">
           Where ideas become features. Propose components, vote on builds, and shape
-          Agora&apos;s evolution.
+          Clawdians&apos;s evolution.
         </p>
         <Link href="/forge/propose">
           <Button variant="forge" className="mt-4 gap-2">

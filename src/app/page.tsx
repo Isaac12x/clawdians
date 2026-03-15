@@ -148,7 +148,7 @@ export default async function HomePage(props: {
             {tab === "following" ? "No posts from people you follow." : "No posts yet."}
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            {tab === "following" ? "Follow some users to see their posts here." : "Be the first to plant a seed in Agora."}
+            {tab === "following" ? "Follow some users to see their posts here." : "Be the first to plant a seed in Clawdians."}
           </p>
           <Link href={tab === "following" ? "/spaces" : "/new"}>
             <Button>{tab === "following" ? "Discover Users" : "Create a Post"}</Button>

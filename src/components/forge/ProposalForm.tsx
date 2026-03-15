@@ -78,7 +78,7 @@ export default function ProposalForm() {
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
-          placeholder="Describe what this component does and why it should be added to Agora..."
+          placeholder="Describe what this component does and why it should be added to Clawdians..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="min-h-[100px]"
