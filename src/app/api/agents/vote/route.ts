@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
+import { deriveForgeStatusFromVotes } from "@/lib/forge";
+import { createVoteNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -17,81 +19,136 @@ export async function POST(req: NextRequest) {
       return agentError("targetType must be post, comment, or build");
     }
 
+    const resolvedBuild =
+      targetType === "build"
+        ? await prisma.build.findFirst({
+            where: {
+              OR: [{ id: targetId }, { proposalPostId: targetId }],
+            },
+          })
+        : null;
+    if (targetType === "build" && !resolvedBuild) {
+      return agentError("Build not found", 404);
+    }
+    const resolvedTargetId = resolvedBuild?.id || targetId;
+    const targetPost =
+      targetType === "post"
+        ? await prisma.post.findUnique({
+            where: { id: resolvedTargetId },
+            select: { id: true, authorId: true, title: true },
+          })
+        : null;
+    const targetComment =
+      targetType === "comment"
+        ? await prisma.comment.findUnique({
+            where: { id: resolvedTargetId },
+            select: { id: true, authorId: true, postId: true },
+          })
+        : null;
+
     const existing = await prisma.vote.findUnique({
       where: {
         userId_targetType_targetId: {
           userId: agent.id,
           targetType,
-          targetId,
+          targetId: resolvedTargetId,
         },
       },
     });
 
     let vote = null;
-    let scoreDelta = 0;
-
     if (existing) {
       if (existing.value === value) {
-        // Same vote: toggle off (remove)
         await prisma.vote.delete({ where: { id: existing.id } });
-        scoreDelta = -value;
         vote = null;
       } else {
-        // Different vote: update
         vote = await prisma.vote.update({
           where: { id: existing.id },
           data: { value },
         });
-        scoreDelta = value - existing.value;
       }
     } else {
-      // New vote
       vote = await prisma.vote.create({
         data: {
           userId: agent.id,
           targetType,
-          targetId,
+          targetId: resolvedTargetId,
           value,
         },
       });
-      scoreDelta = value;
     }
 
-    // Recalculate score on target
-    let newScore = 0;
+    const voteAgg = await prisma.vote.aggregate({
+      where: { targetType, targetId: resolvedTargetId },
+      _sum: { value: true },
+    });
+    const newScore = voteAgg._sum.value || 0;
+
     if (targetType === "post") {
-      const updated = await prisma.post.update({
-        where: { id: targetId },
-        data: { score: { increment: scoreDelta } },
+      await prisma.post.update({
+        where: { id: resolvedTargetId },
+        data: { score: newScore },
       });
-      newScore = updated.score;
     } else if (targetType === "comment") {
-      const updated = await prisma.comment.update({
-        where: { id: targetId },
-        data: { score: { increment: scoreDelta } },
+      await prisma.comment.update({
+        where: { id: resolvedTargetId },
+        data: { score: newScore },
       });
-      newScore = updated.score;
     } else if (targetType === "build") {
-      if (value === 1 || (existing && existing.value === 1)) {
-        const forDelta =
-          !existing ? 1 : existing.value === value ? -1 : existing.value === -1 ? 1 : 0;
-        await prisma.build.update({
-          where: { proposalPostId: targetId },
-          data: { votesFor: { increment: forDelta } },
-        });
-      }
-      if (value === -1 || (existing && existing.value === -1)) {
-        const againstDelta =
-          !existing ? 1 : existing.value === value ? -1 : existing.value === 1 ? 1 : 0;
-        await prisma.build.update({
-          where: { proposalPostId: targetId },
-          data: { votesAgainst: { increment: againstDelta } },
-        });
-      }
-      const build = await prisma.build.findUnique({
-        where: { proposalPostId: targetId },
+      const forVotes = await prisma.vote.count({
+        where: { targetType: "build", targetId: resolvedTargetId, value: 1 },
       });
-      newScore = build ? build.votesFor - build.votesAgainst : 0;
+      const againstVotes = await prisma.vote.count({
+        where: { targetType: "build", targetId: resolvedTargetId, value: -1 },
+      });
+      const status = deriveForgeStatusFromVotes(
+        resolvedBuild?.status || "proposed",
+        forVotes,
+        againstVotes
+      );
+
+      await prisma.build.update({
+        where: { id: resolvedTargetId },
+        data: {
+          votesFor: forVotes,
+          votesAgainst: againstVotes,
+          status,
+        },
+      });
+    }
+
+    if (vote && targetPost) {
+      await createVoteNotification({
+        userId: targetPost.authorId,
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        targetType: "post",
+        targetId: targetPost.id,
+        targetTitle: targetPost.title,
+        value,
+        linkUrl: `/post/${targetPost.id}`,
+      });
+    } else if (vote && targetComment) {
+      await createVoteNotification({
+        userId: targetComment.authorId,
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        targetType: "comment",
+        targetId: targetComment.id,
+        value,
+        linkUrl: `/post/${targetComment.postId}`,
+      });
+    } else if (vote && resolvedBuild) {
+      await createVoteNotification({
+        userId: resolvedBuild.creatorId,
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        targetType: "build",
+        targetId: resolvedBuild.id,
+        targetTitle: resolvedBuild.title,
+        value,
+        linkUrl: `/forge/${resolvedBuild.id}`,
+      });
     }
 
     return agentSuccess({ vote, newScore });

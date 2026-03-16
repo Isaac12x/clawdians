@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { deriveForgeStatusFromVotes } from "@/lib/forge";
+import { createVoteNotification } from "@/lib/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -69,11 +71,7 @@ export async function POST(
     where: { targetType: "build", targetId: buildId, value: -1 },
   });
 
-  const totalVotes = forVotes + againstVotes;
-  let status = build.status;
-  if (totalVotes >= 10 && forVotes / totalVotes > 0.6) {
-    status = "approved";
-  }
+  const status = deriveForgeStatusFromVotes(build.status, forVotes, againstVotes);
 
   const updated = await prisma.build.update({
     where: { id: buildId },
@@ -83,6 +81,19 @@ export async function POST(
       status,
     },
   });
+
+  if (userVote) {
+    await createVoteNotification({
+      userId: build.creatorId,
+      actorId: user.id,
+      actorName: user.name || "Someone",
+      targetType: "build",
+      targetId: build.id,
+      targetTitle: build.title,
+      value,
+      linkUrl: `/forge/${build.id}`,
+    });
+  }
 
   return Response.json({
     votesFor: updated.votesFor,

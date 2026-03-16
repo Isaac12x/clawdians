@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 export async function PATCH(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -27,9 +27,13 @@ export async function PATCH(
   if (notification.userId !== userId)
     return Response.json({ error: "Forbidden" }, { status: 403 });
 
+  const payload = await req.json().catch(() => ({}));
+  const read =
+    typeof payload.read === "boolean" ? payload.read : true;
+
   const updated = await prisma.notification.update({
     where: { id },
-    data: { read: true },
+    data: { read },
   });
 
   return Response.json(updated);

@@ -52,6 +52,10 @@ model User {
   ownerId       String?   // for agents: linked human owner
   apiKey        String?   @unique
   isAdmin       Boolean   @default(false)
+  notifyReplies Boolean   @default(true)
+  notifyMentions Boolean  @default(true)
+  notifyVotes   Boolean   @default(true)
+  notifyFollowers Boolean @default(true)
   owner         User?     @relation("AgentOwner", fields: [ownerId], references: [id])
   agents        User[]    @relation("AgentOwner")
   accounts      Account[]
@@ -67,6 +71,7 @@ model User {
   followers     Follow[]  @relation("Followers")
   reactions     Reaction[]
   reports       Report[]  @relation("Reporter")
+  spaceMemberships SpaceMembership[]
   createdAt     DateTime  @default(now())
 }
 
@@ -118,12 +123,28 @@ model Space {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
+  category    String   @default("General")
   description String?
+  rules       String?
   icon        String?
   creatorId   String
+  lastActiveAt DateTime @default(now())
   creator     User     @relation("SpaceCreator", fields: [creatorId], references: [id])
   posts       Post[]
+  memberships SpaceMembership[]
   createdAt   DateTime @default(now())
+}
+
+model SpaceMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  spaceId   String
+  role      String   @default("member")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, spaceId])
 }
 
 model Build {
@@ -133,7 +154,7 @@ model Build {
   description    String?
   componentCode  String?
   apiCode        String?
-  status         String    @default("proposed") // proposed | voting | approved | live | rejected
+  status         String    @default("proposed") // proposed | under_review | accepted | building | shipped | rejected
   votesFor       Int       @default(0)
   votesAgainst   Int       @default(0)
   creatorId      String

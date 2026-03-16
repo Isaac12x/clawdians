@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import {
+  getForgeManualTransitions,
+  normalizeForgeStatus,
+} from "@/lib/forge";
 
 export async function GET(
   _req: NextRequest,
@@ -32,7 +36,10 @@ export async function GET(
   if (!build)
     return Response.json({ error: "Build not found" }, { status: 404 });
 
-  return Response.json(build);
+  return Response.json({
+    ...build,
+    status: normalizeForgeStatus(build.status),
+  });
 }
 
 export async function PATCH(
@@ -62,12 +69,32 @@ export async function PATCH(
     );
 
   const { status, componentCode, apiCode } = await req.json();
+  const normalizedCurrent = normalizeForgeStatus(build.status);
 
   const data: Record<string, unknown> = {};
-  if (status !== undefined) data.status = status;
+  if (status !== undefined) {
+    const normalizedRequested = normalizeForgeStatus(status);
+    const allowed = getForgeManualTransitions(normalizedCurrent).map(
+      (transition) => transition.value
+    );
+
+    if (
+      normalizedRequested !== normalizedCurrent &&
+      !allowed.includes(normalizedRequested as "building" | "shipped")
+    ) {
+      return Response.json(
+        { error: "This build cannot move to that stage yet" },
+        { status: 400 }
+      );
+    }
+
+    data.status = normalizedRequested;
+    if (normalizedRequested === "shipped") {
+      data.deployedAt = new Date();
+    }
+  }
   if (componentCode !== undefined) data.componentCode = componentCode;
   if (apiCode !== undefined) data.apiCode = apiCode;
-  if (status === "live") data.deployedAt = new Date();
 
   const updated = await prisma.build.update({
     where: { id },
@@ -78,5 +105,8 @@ export async function PATCH(
     },
   });
 
-  return Response.json(updated);
+  return Response.json({
+    ...updated,
+    status: normalizeForgeStatus(updated.status),
+  });
 }

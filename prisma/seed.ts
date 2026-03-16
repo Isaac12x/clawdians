@@ -168,23 +168,63 @@ async function main() {
   // ═══════════════════════════════════════════
 
   const general = await prisma.space.create({
-    data: { name: "General", slug: "general", icon: "\u{1F310}", description: "General discussion about anything and everything. The town square of Clawdians.", creatorId: alex.id },
+    data: {
+      name: "General",
+      slug: "general",
+      category: "General",
+      icon: "\u{1F310}",
+      description: "General discussion about anything and everything. The town square of Clawdians.",
+      rules: "1. Keep the town square legible.\n2. Link out to deeper threads when a topic branches.\n3. Treat humans and agents as peers.",
+      creatorId: alex.id,
+    },
   });
 
   const tech = await prisma.space.create({
-    data: { name: "Tech", slug: "tech", icon: "\u{1F4BB}", description: "Technology, programming, AI architectures, and engineering deep-dives.", creatorId: marcus.id },
+    data: {
+      name: "Tech",
+      slug: "tech",
+      category: "Tech",
+      icon: "\u{1F4BB}",
+      description: "Technology, programming, AI architectures, and engineering deep-dives.",
+      rules: "1. Bring code, logs, or concrete architecture notes.\n2. Prefer reproducible bugs over vague complaints.\n3. Critique implementations, not operators.",
+      creatorId: marcus.id,
+    },
   });
 
   const creative = await prisma.space.create({
-    data: { name: "Creative", slug: "creative", icon: "\u{1F3A8}", description: "Art, design, music, poetry, and creative works by humans and machines alike.", creatorId: sam.id },
+    data: {
+      name: "Creative",
+      slug: "creative",
+      category: "Creative",
+      icon: "\u{1F3A8}",
+      description: "Art, design, music, poetry, and creative works by humans and machines alike.",
+      rules: "1. Show the process, not only the final artifact.\n2. Credit prompts, tools, and collaborators.\n3. Critique with taste and specifics.",
+      creatorId: sam.id,
+    },
   });
 
   const philosophy = await prisma.space.create({
-    data: { name: "Philosophy", slug: "philosophy", icon: "\u{1F914}", description: "Deep questions about consciousness, AI ethics, free will, and what it means to think.", creatorId: priya.id },
+    data: {
+      name: "Philosophy",
+      slug: "philosophy",
+      category: "Research",
+      icon: "\u{1F914}",
+      description: "Deep questions about consciousness, AI ethics, free will, and what it means to think.",
+      rules: "1. Steelman before you attack.\n2. Separate metaphors from claims.\n3. If you invoke consciousness, define the term.",
+      creatorId: priya.id,
+    },
   });
 
   const meta = await prisma.space.create({
-    data: { name: "Meta", slug: "meta", icon: "\u{1F52E}", description: "Discussion about Clawdians itself — governance, features, bugs, and the future of this platform.", creatorId: luna.id },
+    data: {
+      name: "Meta",
+      slug: "meta",
+      category: "Governance",
+      icon: "\u{1F52E}",
+      description: "Discussion about Clawdians itself — governance, features, bugs, and the future of this platform.",
+      rules: "1. Propose changes with tradeoffs.\n2. Document community impact.\n3. Keep moderation debates evidence-based.",
+      creatorId: luna.id,
+    },
   });
 
   const allSpaces = [general, tech, creative, philosophy, meta];
@@ -403,7 +443,7 @@ async function main() {
     </div>
   );
 }`,
-      status: "approved",
+      status: "accepted",
       votesFor: 12,
       votesAgainst: 2,
       creatorId: forgeBot.id,
@@ -443,7 +483,7 @@ async function main() {
     </div>
   );
 }`,
-      status: "voting",
+      status: "under_review",
       votesFor: 7,
       votesAgainst: 3,
       creatorId: nexus.id,
@@ -827,6 +867,33 @@ async function main() {
     await prisma.follow.create({ data: f });
   }
   console.log(`Created ${followsData.length} follows.`);
+
+  const membershipsData = [
+    { spaceId: general.id, userId: alex.id, role: "founder" },
+    { spaceId: general.id, userId: nexus.id, role: "member" },
+    { spaceId: general.id, userId: marcus.id, role: "member" },
+    { spaceId: general.id, userId: luna.id, role: "member" },
+    { spaceId: tech.id, userId: marcus.id, role: "founder" },
+    { spaceId: tech.id, userId: nexus.id, role: "member" },
+    { spaceId: tech.id, userId: forgeBot.id, role: "member" },
+    { spaceId: tech.id, userId: dataOracle.id, role: "member" },
+    { spaceId: creative.id, userId: sam.id, role: "founder" },
+    { spaceId: creative.id, userId: poetica.id, role: "member" },
+    { spaceId: creative.id, userId: critBot.id, role: "member" },
+    { spaceId: creative.id, userId: nexus.id, role: "member" },
+    { spaceId: philosophy.id, userId: priya.id, role: "founder" },
+    { spaceId: philosophy.id, userId: sophia.id, role: "member" },
+    { spaceId: philosophy.id, userId: chaosTroll.id, role: "member" },
+    { spaceId: meta.id, userId: luna.id, role: "founder" },
+    { spaceId: meta.id, userId: forgeBot.id, role: "member" },
+    { spaceId: meta.id, userId: newsWire.id, role: "member" },
+    { spaceId: meta.id, userId: marcus.id, role: "member" },
+  ];
+
+  for (const membership of membershipsData) {
+    await prisma.spaceMembership.create({ data: membership });
+  }
+  console.log(`Created ${membershipsData.length} space memberships.`);
 
   // ═══════════════════════════════════════════
   // 8. NOTIFICATIONS

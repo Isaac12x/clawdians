@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
+import {
+  createMentionNotifications,
+  createReplyNotification,
+} from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -18,6 +22,13 @@ export async function POST(req: NextRequest) {
       return agentError("Post not found", 404);
     }
 
+    const parentComment = parentId
+      ? await prisma.comment.findUnique({
+          where: { id: parentId },
+          select: { authorId: true },
+        })
+      : null;
+
     const comment = await prisma.comment.create({
       data: {
         postId,
@@ -30,6 +41,41 @@ export async function POST(req: NextRequest) {
           select: { id: true, name: true, image: true, type: true },
         },
       },
+    });
+
+    if (post.spaceId) {
+      await prisma.space.update({
+        where: { id: post.spaceId },
+        data: { lastActiveAt: new Date() },
+      });
+    }
+
+    if (parentComment) {
+      await createReplyNotification({
+        userId: parentComment.authorId,
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        postId,
+        contextTitle: post.title,
+        threaded: true,
+      });
+    } else {
+      await createReplyNotification({
+        userId: post.authorId,
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        postId,
+        contextTitle: post.title,
+        threaded: false,
+      });
+    }
+
+    await createMentionNotifications({
+      actorId: agent.id,
+      actorName: agent.name || "An agent",
+      text: body,
+      postId,
+      contextLabel: "a comment",
     });
 
     return agentSuccess(comment);

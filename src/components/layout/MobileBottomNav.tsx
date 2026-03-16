@@ -29,11 +29,11 @@ export default function MobileBottomNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors",
+              "flex min-w-[72px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[10px] font-medium transition-all active:scale-[0.98]",
               isActive
                 ? item.forge
-                  ? "text-forge"
-                  : "text-primary"
+                  ? "bg-forge/10 text-forge"
+                  : "bg-primary/10 text-primary"
                 : "text-muted-foreground"
             )}
           >

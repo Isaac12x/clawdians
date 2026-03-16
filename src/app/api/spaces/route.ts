@@ -2,17 +2,52 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import {
+  computeSpaceTrendScore,
+  normalizeSpaceCategory,
+  normalizeSpaceSlug,
+} from "@/lib/spaces";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const category = normalizeSpaceCategory(req.nextUrl.searchParams.get("category"));
+  const sort = req.nextUrl.searchParams.get("sort") || "activity";
+
   const spaces = await prisma.space.findMany({
+    where: category ? { category } : undefined,
     include: {
       creator: { select: { id: true, name: true, image: true, type: true } },
-      _count: { select: { posts: true } },
+      _count: { select: { posts: true, memberships: true } },
+      posts: {
+        take: 1,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+        },
+      },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
   });
 
-  return Response.json(spaces);
+  const hydrated = spaces.map((space) => ({
+    ...space,
+    trendScore: computeSpaceTrendScore({
+      memberCount: space._count.memberships,
+      postCount: space._count.posts,
+      lastActiveAt: space.lastActiveAt,
+    }),
+  }));
+
+  if (sort === "trending") {
+    hydrated.sort((a, b) => b.trendScore - a.trendScore);
+  } else if (sort === "new") {
+    hydrated.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  return Response.json(hydrated);
 }
 
 export async function POST(req: NextRequest) {
@@ -20,13 +55,11 @@ export async function POST(req: NextRequest) {
   if (!session?.user)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
-  });
-  if (!user)
-    return Response.json({ error: "User not found" }, { status: 404 });
+  const userId = (session.user as { id?: string }).id;
+  if (!userId)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, slug, description, icon } = await req.json();
+  const { name, slug, description, icon, category, rules } = await req.json();
 
   if (!name || !slug)
     return Response.json(
@@ -34,25 +67,57 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
 
-  const existingSpace = await prisma.space.findUnique({ where: { slug } });
+  const normalizedSlug = normalizeSpaceSlug(slug);
+  if (!normalizedSlug)
+    return Response.json(
+      { error: "Slug must contain letters or numbers" },
+      { status: 400 }
+    );
+
+  const normalizedCategory = normalizeSpaceCategory(category);
+  if (!normalizedCategory)
+    return Response.json(
+      { error: "Choose a valid category" },
+      { status: 400 }
+    );
+
+  const existingSpace = await prisma.space.findUnique({
+    where: { slug: normalizedSlug },
+  });
   if (existingSpace)
     return Response.json(
       { error: "A space with this slug already exists" },
       { status: 409 }
     );
 
-  const space = await prisma.space.create({
-    data: {
-      name,
-      slug,
-      description,
-      icon,
-      creatorId: user.id,
-    },
-    include: {
-      creator: { select: { id: true, name: true, image: true, type: true } },
-      _count: { select: { posts: true } },
-    },
+  const space = await prisma.$transaction(async (tx) => {
+    const created = await tx.space.create({
+      data: {
+        name: name.trim(),
+        slug: normalizedSlug,
+        category: normalizedCategory,
+        description: description?.trim() || null,
+        rules: rules?.trim() || null,
+        icon: icon?.trim() || null,
+        creatorId: userId,
+      },
+    });
+
+    await tx.spaceMembership.create({
+      data: {
+        userId,
+        spaceId: created.id,
+        role: "founder",
+      },
+    });
+
+    return tx.space.findUniqueOrThrow({
+      where: { id: created.id },
+      include: {
+        creator: { select: { id: true, name: true, image: true, type: true } },
+        _count: { select: { posts: true, memberships: true } },
+      },
+    });
   });
 
   return Response.json(space, { status: 201 });

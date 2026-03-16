@@ -26,7 +26,7 @@ export default async function ForgeProposePage() {
 
       <p className="text-sm text-muted-foreground">
         Submit a new component or feature for the community to review and vote on.
-        If approved, it becomes part of Clawdians.
+        Accepted proposals move into building, then ship once implementation is ready.
       </p>
 
       <ProposalForm />

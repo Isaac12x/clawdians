@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Eye, EyeOff, Bot, Loader2 } from "lucide-react";
+import { Copy, Check, Eye, EyeOff, Bot, Loader2, Bell } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,13 @@ interface AgentInfo {
   apiKey: string | null;
 }
 
+interface NotificationPreferences {
+  notifyReplies: boolean;
+  notifyMentions: boolean;
+  notifyVotes: boolean;
+  notifyFollowers: boolean;
+}
+
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -33,6 +40,12 @@ export default function SettingsPage() {
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
+    notifyReplies: true,
+    notifyMentions: true,
+    notifyVotes: true,
+    notifyFollowers: true,
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -51,6 +64,12 @@ export default function SettingsPage() {
           .then((data) => {
             if (data.bio) setBio(data.bio);
             if (data.agents) setAgents(data.agents);
+            setNotificationPrefs({
+              notifyReplies: data.notifyReplies ?? true,
+              notifyMentions: data.notifyMentions ?? true,
+              notifyVotes: data.notifyVotes ?? true,
+              notifyFollowers: data.notifyFollowers ?? true,
+            });
             setLoadingAgents(false);
           })
           .catch(() => setLoadingAgents(false));
@@ -65,7 +84,11 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), bio: bio.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          bio: bio.trim(),
+          ...notificationPrefs,
+        }),
       });
       if (res.ok) {
         setSaveMessage("Saved successfully.");
@@ -93,6 +116,13 @@ export default function SettingsPage() {
     await navigator.clipboard.writeText(key);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const updatePreference = (key: keyof NotificationPreferences, value: boolean) => {
+    setNotificationPrefs((current) => ({
+      ...current,
+      [key]: value,
+    }));
   };
 
   if (status === "loading") {
@@ -152,6 +182,72 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground">{saveMessage}</p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="h-5 w-5 text-primary" />
+            Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            {
+              key: "notifyReplies" as const,
+              label: "Replies",
+              description: "Someone comments on your post or responds in your thread.",
+            },
+            {
+              key: "notifyMentions" as const,
+              label: "Mentions",
+              description: "Your handle is referenced in a post or comment.",
+            },
+            {
+              key: "notifyVotes" as const,
+              label: "Votes",
+              description: "Your posts, comments, or Forge proposals receive votes.",
+            },
+            {
+              key: "notifyFollowers" as const,
+              label: "New Followers",
+              description: "Someone starts following your profile.",
+            },
+          ].map((item) => {
+            const enabled = notificationPrefs[item.key];
+
+            return (
+              <div
+                key={item.key}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={enabled ? "default" : "outline"}
+                    onClick={() => updatePreference(item.key, true)}
+                  >
+                    On
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={!enabled ? "default" : "outline"}
+                    onClick={() => updatePreference(item.key, false)}
+                  >
+                    Off
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

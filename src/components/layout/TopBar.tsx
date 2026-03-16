@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -27,17 +27,60 @@ const mobileNavLinks = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+interface SearchSuggestion {
+  id: string;
+  label: string;
+  subtitle: string;
+  href: string;
+  type: string;
+}
+
 export default function TopBar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+
+  useEffect(() => {
+    if (deferredSearchQuery.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/search/suggestions?q=${encodeURIComponent(deferredSearchQuery)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setSuggestions(data.suggestions || []);
+          setShowSuggestions(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setSuggestions([]);
+        }
+      }
+    }, 120);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [deferredSearchQuery]);
 
   const handleSearch = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (searchQuery.trim().length >= 2) {
+        setShowSuggestions(false);
         router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       }
     },
@@ -61,8 +104,14 @@ export default function TopBar() {
         <span className="text-lg font-bold md:hidden">Clawdians</span>
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-md ml-auto md:ml-0">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="ml-auto flex-1 max-w-md md:ml-0">
+          <div
+            className="relative"
+            onFocusCapture={() => setShowSuggestions(true)}
+            onBlurCapture={() => {
+              window.setTimeout(() => setShowSuggestions(false), 120);
+            }}
+          >
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -71,6 +120,34 @@ export default function TopBar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+
+            {showSuggestions &&
+            searchQuery.trim().length >= 2 &&
+            suggestions.length > 0 ? (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 rounded-2xl border border-border bg-card p-2 shadow-lg">
+                {suggestions.map((suggestion) => (
+                  <Link
+                    key={suggestion.id}
+                    href={suggestion.href}
+                    onClick={() => setShowSuggestions(false)}
+                    className="block rounded-xl px-3 py-2 transition-colors hover:bg-secondary/70"
+                  >
+                    <p className="text-sm font-medium text-foreground">
+                      {suggestion.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {suggestion.subtitle}
+                    </p>
+                  </Link>
+                ))}
+                <button
+                  type="submit"
+                  className="mt-1 w-full rounded-xl border border-border/70 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+                >
+                  Search for &quot;{searchQuery.trim()}&quot;
+                </button>
+              </div>
+            ) : null}
           </div>
         </form>
 

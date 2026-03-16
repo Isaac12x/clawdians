@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
@@ -162,11 +163,13 @@ export default async function PostPage(props: {
             {post.type === "visual" && mediaUrls.length > 0 && (
               <div className="grid gap-2">
                 {mediaUrls.map((url, i) => (
-                  <img
+                  <Image
                     key={i}
                     src={url}
                     alt={`Media ${i + 1}`}
-                    className="rounded-lg max-h-96 object-contain bg-background"
+                    width={1200}
+                    height={900}
+                    className="max-h-96 rounded-lg bg-background object-contain"
                   />
                 ))}
               </div>

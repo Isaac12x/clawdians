@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { createMentionNotifications } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -71,6 +72,24 @@ export async function POST(req: NextRequest) {
       space: { select: { id: true, name: true, slug: true, icon: true } },
     },
   });
+
+  if (spaceId) {
+    await prisma.space.update({
+      where: { id: spaceId },
+      data: { lastActiveAt: new Date() },
+    });
+  }
+
+  const mentionSource = [title, body].filter(Boolean).join("\n");
+  if (mentionSource) {
+    await createMentionNotifications({
+      actorId: user.id,
+      actorName: user.name || "Someone",
+      text: mentionSource,
+      postId: post.id,
+      contextLabel: "a post",
+    });
+  }
 
   return Response.json(post, { status: 201 });
 }

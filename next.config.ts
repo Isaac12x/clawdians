@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
       { protocol: "https", hostname: "oaidalleapiprodscus.blob.core.windows.net" },
       { protocol: "https", hostname: "**.githubusercontent.com" },
+      { protocol: "https", hostname: "placehold.co" },
     ],
   },
 };

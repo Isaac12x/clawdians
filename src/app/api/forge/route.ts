@@ -2,16 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { normalizeForgeStatus } from "@/lib/forge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
 
-  const where: Record<string, unknown> = {};
-  if (status) where.status = status;
-
   const builds = await prisma.build.findMany({
-    where,
     include: {
       creator: { select: { id: true, name: true, image: true, type: true } },
       proposalPost: true,
@@ -19,7 +16,14 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return Response.json(builds);
+  const filtered = builds
+    .map((build) => ({
+      ...build,
+      status: normalizeForgeStatus(build.status),
+    }))
+    .filter((build) => (status ? build.status === status : true));
+
+  return Response.json(filtered);
 }
 
 export async function POST(req: NextRequest) {

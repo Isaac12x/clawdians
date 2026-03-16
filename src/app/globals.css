@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0F172A;
-  --color-foreground: #E2E8F0;
-  --color-card: #1E293B;
-  --color-card-foreground: #E2E8F0;
-  --color-popover: #1E293B;
-  --color-popover-foreground: #E2E8F0;
-  --color-primary: #3B82F6;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #334155;
-  --color-secondary-foreground: #E2E8F0;
-  --color-muted: #1E293B;
-  --color-muted-foreground: #94A3B8;
-  --color-accent: #334155;
-  --color-accent-foreground: #E2E8F0;
-  --color-destructive: #EF4444;
-  --color-destructive-foreground: #FFFFFF;
-  --color-border: #334155;
-  --color-input: #334155;
-  --color-ring: #3B82F6;
-  --color-forge: #F59E0B;
-  --color-forge-foreground: #FFFFFF;
-  --color-agent-glow: #3B82F6;
+  --color-background: #08111f;
+  --color-foreground: #e4ecf7;
+  --color-card: #101b31;
+  --color-card-foreground: #e4ecf7;
+  --color-popover: #101b31;
+  --color-popover-foreground: #e4ecf7;
+  --color-primary: #4f8df5;
+  --color-primary-foreground: #f5f9ff;
+  --color-secondary: #1c2942;
+  --color-secondary-foreground: #d8e4f7;
+  --color-muted: #0f1a2f;
+  --color-muted-foreground: #91a3c3;
+  --color-accent: #16223a;
+  --color-accent-foreground: #e4ecf7;
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #fff7f7;
+  --color-border: #233252;
+  --color-input: #233252;
+  --color-ring: #6aa2ff;
+  --color-forge: #f4a524;
+  --color-forge-foreground: #111827;
+  --color-agent-glow: #4f8df5;
   --radius: 0.5rem;
 }
 
@@ -34,6 +34,30 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(79, 141, 245, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(244, 165, 36, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+}
+
+::selection {
+  background: rgba(79, 141, 245, 0.28);
+  color: var(--color-foreground);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  transition:
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Scrollbar styling */
@@ -50,7 +74,7 @@ body {
 
 /* Agent avatar glow */
 .agent-glow {
-  box-shadow: 0 0 12px 2px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 14px 2px rgba(79, 141, 245, 0.38);
 }
 
 /* Forge accent */
@@ -68,13 +92,13 @@ body {
 
 /* Smooth transitions */
 .transition-smooth {
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Agent glow animation (subtle pulse) */
 @keyframes agent-pulse {
-  0%, 100% { box-shadow: 0 0 12px 2px rgba(59, 130, 246, 0.4); }
-  50% { box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.6); }
+  0%, 100% { box-shadow: 0 0 12px 2px rgba(79, 141, 245, 0.28); }
+  50% { box-shadow: 0 0 18px 5px rgba(79, 141, 245, 0.42); }
 }
 .agent-glow-animated {
   animation: agent-pulse 3s ease-in-out infinite;
@@ -82,7 +106,7 @@ body {
 
 /* Agent card glow (for profile cards) */
 .agent-card-glow {
-  box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 28px 4px rgba(79, 141, 245, 0.12);
 }
 
 /* Markdown content styling */
@@ -169,10 +193,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    height: 56px;
-    background: var(--color-card);
+    height: 68px;
+    background: color-mix(in srgb, var(--color-card) 88%, transparent);
     border-top: 1px solid var(--color-border);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
+    backdrop-filter: blur(18px);
   }
 }
 
@@ -183,11 +208,14 @@ body {
 
 /* Card hover lift effect */
 .card-hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .card-hover-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 60px -40px rgba(79, 141, 245, 0.55);
 }
 
 /* Agent badge shimmer */
@@ -208,6 +236,51 @@ body {
 }
 .toast-enter {
   animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes page-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-shell > * {
+  animation: page-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(145, 163, 195, 0.08) 0%,
+      rgba(145, 163, 195, 0.2) 50%,
+      rgba(145, 163, 195, 0.08) 100%
+    );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Hide mobile bottom nav on desktop */

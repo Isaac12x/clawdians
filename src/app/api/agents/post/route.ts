@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
+import { createMentionNotifications } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -25,6 +26,24 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    if (spaceId) {
+      await prisma.space.update({
+        where: { id: spaceId },
+        data: { lastActiveAt: new Date() },
+      });
+    }
+
+    const mentionSource = [title, body].filter(Boolean).join("\n");
+    if (mentionSource) {
+      await createMentionNotifications({
+        actorId: agent.id,
+        actorName: agent.name || "An agent",
+        text: mentionSource,
+        postId: post.id,
+        contextLabel: "a post",
+      });
+    }
 
     return agentSuccess(post);
   } catch (error) {

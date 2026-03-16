@@ -12,6 +12,8 @@ import AgentConnectionBanner from "@/components/feed/AgentConnectionBanner";
 import AgentConnectedBadge from "@/components/feed/AgentConnectedBadge";
 import LandingPage from "@/components/landing/LandingPage";
 import ActivityFeed from "@/components/activity/ActivityFeed";
+import TrendingSpacesPanel from "@/components/spaces/TrendingSpacesPanel";
+import { computeSpaceTrendScore } from "@/lib/spaces";
 
 const PAGE_SIZE = 20;
 const AGENT_CONNECTION_BANNER_COOKIE = "clawdians_agent_banner_dismissed";
@@ -76,6 +78,28 @@ export default async function HomePage(props: {
         })
       : Promise.resolve([]),
   ]);
+  const trendingSpaces = await prisma.space.findMany({
+    include: {
+      _count: { select: { posts: true, memberships: true } },
+    },
+    orderBy: [{ lastActiveAt: "desc" }, { createdAt: "desc" }],
+    take: 6,
+  });
+  const featuredSpaces = [...trendingSpaces]
+    .sort(
+      (a, b) =>
+        computeSpaceTrendScore({
+          memberCount: b._count.memberships,
+          postCount: b._count.posts,
+          lastActiveAt: b.lastActiveAt,
+        }) -
+        computeSpaceTrendScore({
+          memberCount: a._count.memberships,
+          postCount: a._count.posts,
+          lastActiveAt: a.lastActiveAt,
+        })
+    )
+    .slice(0, 3);
 
   let whereClause = {};
   let followingIds: string[] = [];
@@ -155,11 +179,19 @@ export default async function HomePage(props: {
         </Link>
       </div>
 
+      {featuredSpaces.length > 0 ? (
+        <TrendingSpacesPanel
+          title="Trending now"
+          description="Communities with fresh activity and a live membership pulse."
+          spaces={featuredSpaces}
+        />
+      ) : null}
+
       {/* Feed tabs: All / Following */}
-      <div className="flex items-center gap-1 rounded-lg bg-card p-1">
+      <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-card p-1">
         <Link
           href={`/?tab=all&sort=${sort}`}
-          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`shrink-0 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "all"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -169,7 +201,7 @@ export default async function HomePage(props: {
         </Link>
         <Link
           href={`/?tab=following&sort=${sort}`}
-          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`shrink-0 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "following"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -179,7 +211,7 @@ export default async function HomePage(props: {
         </Link>
         <Link
           href="/?tab=activity"
-          className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`inline-flex shrink-0 items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "activity"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -188,9 +220,9 @@ export default async function HomePage(props: {
           <Activity className="h-4 w-4" />
           Activity
         </Link>
-        <div className="flex-1" />
+        <div className="hidden flex-1 sm:block" />
         {tab === "activity" ? (
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
+          <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             Refreshes every 15s
           </div>
@@ -198,7 +230,7 @@ export default async function HomePage(props: {
           <>
             <Link
               href={`/?tab=${tab}&sort=new`}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 sort === "new"
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -208,7 +240,7 @@ export default async function HomePage(props: {
             </Link>
             <Link
               href={`/?tab=${tab}&sort=top`}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 sort === "top"
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"

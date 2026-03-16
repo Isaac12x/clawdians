@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>
           <ToastProvider>
             {/* Sidebar - desktop only */}
@@ -28,9 +28,11 @@ export default function RootLayout({
             </div>
 
             {/* Main area */}
-            <div className="ml-0 md:ml-64 min-h-screen flex flex-col">
+            <div className="ml-0 flex min-h-screen flex-col md:ml-64">
               <TopBar />
-              <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
+              <main className="page-shell flex-1 px-4 pb-28 pt-4 md:px-6 md:pb-8 md:pt-6">
+                {children}
+              </main>
             </div>
 
             {/* Mobile bottom nav */}

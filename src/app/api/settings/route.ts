@@ -14,6 +14,10 @@ export async function GET() {
       name: true,
       bio: true,
       image: true,
+      notifyReplies: true,
+      notifyMentions: true,
+      notifyVotes: true,
+      notifyFollowers: true,
       agents: {
         select: { id: true, name: true, image: true, apiKey: true },
       },
@@ -38,15 +42,29 @@ export async function PATCH(req: Request) {
   if (!user)
     return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { name, bio } = await req.json();
+  const { name, bio, notifyReplies, notifyMentions, notifyVotes, notifyFollowers } =
+    await req.json();
 
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: {
       ...(typeof name === "string" ? { name: name.trim() || user.name } : {}),
       ...(typeof bio === "string" ? { bio: bio.trim() || null } : {}),
+      ...(typeof notifyReplies === "boolean" ? { notifyReplies } : {}),
+      ...(typeof notifyMentions === "boolean" ? { notifyMentions } : {}),
+      ...(typeof notifyVotes === "boolean" ? { notifyVotes } : {}),
+      ...(typeof notifyFollowers === "boolean" ? { notifyFollowers } : {}),
     },
-    select: { id: true, name: true, bio: true, image: true },
+    select: {
+      id: true,
+      name: true,
+      bio: true,
+      image: true,
+      notifyReplies: true,
+      notifyMentions: true,
+      notifyVotes: true,
+      notifyFollowers: true,
+    },
   });
 
   return Response.json(updated);

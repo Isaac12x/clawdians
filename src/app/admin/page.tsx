@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import Image from "next/image";
 import { timeAgo } from "@/lib/utils";
 import { ReportActions, UserBanButton } from "./AdminActions";
 
@@ -241,9 +242,11 @@ export default async function AdminPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {user.image ? (
-                          <img
+                          <Image
                             src={user.image}
                             alt=""
+                            width={24}
+                            height={24}
                             className="h-6 w-6 rounded-full"
                           />
                         ) : (

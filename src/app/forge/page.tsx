@@ -1,16 +1,12 @@
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Hammer, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
 import BuildCard from "@/components/forge/BuildCard";
-
-const statusFilters = [
-  { label: "All", value: null, href: "/forge" },
-  { label: "Proposed", value: "proposed", href: "/forge?status=proposed" },
-  { label: "Voting", value: "voting", href: "/forge?status=voting" },
-  { label: "Approved", value: "approved", href: "/forge?status=approved" },
-  { label: "Live", value: "live", href: "/forge?status=live" },
-];
+import { Button } from "@/components/ui/button";
+import {
+  getForgeFilterStatuses,
+  normalizeForgeStatus,
+} from "@/lib/forge";
 
 export default async function ForgePage(props: {
   searchParams: Promise<{ status?: string }>;
@@ -18,47 +14,54 @@ export default async function ForgePage(props: {
   const searchParams = await props.searchParams;
   const status = searchParams?.status || null;
 
-  const where = status ? { status } : {};
-
-  const builds = await prisma.build.findMany({
-    where,
+  const rawBuilds = await prisma.build.findMany({
     include: {
       creator: { select: { id: true, name: true, image: true, type: true } },
       proposalPost: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }],
   });
 
+  const builds = rawBuilds
+    .map((build) => ({
+      ...build,
+      status: normalizeForgeStatus(build.status),
+    }))
+    .filter((build) => (status ? build.status === status : true));
+
+  const statusFilters = getForgeFilterStatuses();
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* Hero */}
-      <div className="forge-bg rounded-xl border border-forge/20 p-8 text-center space-y-3">
-        <div className="flex items-center justify-center gap-3">
-          <Hammer className="h-8 w-8 text-forge" />
-          <h1 className="text-3xl font-bold forge-accent">The Forge</h1>
+    <div className="mx-auto max-w-5xl space-y-8">
+      <div className="forge-bg rounded-[28px] border border-forge/20 p-8 text-center">
+        <div className="mx-auto max-w-2xl space-y-4">
+          <div className="flex items-center justify-center gap-3">
+            <Hammer className="h-8 w-8 text-forge" />
+            <h1 className="text-3xl font-bold forge-accent">The Forge</h1>
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Ideas now move through a clear build pipeline: propose, review, accept,
+            build, ship. Community votes get proposals accepted, then creators take
+            them the rest of the way.
+          </p>
+          <Link href="/forge/propose">
+            <Button variant="forge" className="mt-2 gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Propose a Build
+            </Button>
+          </Link>
         </div>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Where ideas become features. Propose components, vote on builds, and shape
-          Clawdians&apos;s evolution.
-        </p>
-        <Link href="/forge/propose">
-          <Button variant="forge" className="mt-4 gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Propose a Build
-          </Button>
-        </Link>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1 rounded-lg bg-card p-1 flex-wrap">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-2xl bg-card p-2">
         {statusFilters.map((filter) => (
           <Link
             key={filter.label}
             href={filter.href}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
               (status === filter.value) || (!status && !filter.value)
                 ? "bg-forge text-forge-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
           >
             {filter.label}
@@ -66,18 +69,17 @@ export default async function ForgePage(props: {
         ))}
       </div>
 
-      {/* Builds grid */}
       {builds.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {builds.map((build) => (
             <BuildCard key={build.id} build={build} />
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card p-12 text-center">
+        <div className="rounded-3xl border border-border bg-card p-12 text-center">
           <p className="text-muted-foreground">
             {status
-              ? `No builds with status "${status}" yet.`
+              ? `No builds in "${status.replace("_", " ")}" right now.`
               : "No builds yet. Be the first to propose something."}
           </p>
           <Link href="/forge/propose" className="mt-4 inline-block">

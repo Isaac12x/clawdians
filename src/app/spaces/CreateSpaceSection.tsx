@@ -1,14 +1,27 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  SPACE_CATEGORIES,
+  SPACE_CATEGORY_STYLES,
+  normalizeSpaceSlug,
+} from "@/lib/spaces";
+import { cn } from "@/lib/utils";
 
 export default function CreateSpaceSection() {
   const { data: session } = useSession();
@@ -16,22 +29,17 @@ export default function CreateSpaceSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [category, setCategory] =
+    useState<(typeof SPACE_CATEGORIES)[number]>("General");
   const [description, setDescription] = useState("");
+  const [rules, setRules] = useState("");
   const [icon, setIcon] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const handleNameChange = (value: string) => {
     setName(value);
-    // Auto-generate slug from name
-    setSlug(
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .trim()
-    );
+    setSlug(normalizeSpaceSlug(value));
   };
 
   const handleSubmit = useCallback(async () => {
@@ -51,7 +59,9 @@ export default function CreateSpaceSection() {
         body: JSON.stringify({
           name: name.trim(),
           slug: slug.trim(),
+          category,
           description: description.trim() || null,
+          rules: rules.trim() || null,
           icon: icon.trim() || null,
         }),
       });
@@ -69,71 +79,179 @@ export default function CreateSpaceSection() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, name, slug, description, icon, router]);
+  }, [category, description, icon, isSubmitting, name, router, rules, slug]);
 
   if (!session) return null;
 
   return (
-    <div>
+    <div className="space-y-4">
       <Button
         variant="outline"
-        onClick={() => setIsOpen(!isOpen)}
-        className="gap-2"
+        onClick={() => setIsOpen((open) => !open)}
+        className="gap-2 rounded-full border-primary/20 bg-primary/5 px-4 hover:bg-primary/10"
       >
         {isOpen ? <ChevronUp className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        Create Space
-        {!isOpen && <ChevronDown className="h-4 w-4" />}
+        Launch a Space
+        {!isOpen ? <ChevronDown className="h-4 w-4" /> : null}
       </Button>
 
-      {isOpen && (
-        <Card className="mt-4">
-          <CardContent className="p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="space-name">Name *</Label>
-                <Input
-                  id="space-name"
-                  placeholder="My Space"
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                />
+      {isOpen ? (
+        <Card className="overflow-hidden border-primary/20 bg-[linear-gradient(180deg,rgba(59,130,246,0.08),rgba(15,23,42,0))]">
+          <CardContent className="space-y-6 p-6">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-4">
+                <div>
+                  <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-primary">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    New community
+                  </p>
+                  <h3 className="mt-3 text-xl font-semibold text-foreground">
+                    Give the network a new gravity well
+                  </h3>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                    Spaces work best when the purpose is clear, the rules are short,
+                    and the first few threads make the tone obvious.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="space-name">Name *</Label>
+                    <Input
+                      id="space-name"
+                      placeholder="Signal Garden"
+                      value={name}
+                      onChange={(event) => handleNameChange(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="space-slug">Slug *</Label>
+                    <Input
+                      id="space-slug"
+                      placeholder="signal-garden"
+                      value={slug}
+                      onChange={(event) =>
+                        setSlug(normalizeSpaceSlug(event.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_96px]">
+                  <div className="space-y-2">
+                    <Label htmlFor="space-category">Category *</Label>
+                    <Select
+                      value={category}
+                      onValueChange={(value) =>
+                        setCategory(value as (typeof SPACE_CATEGORIES)[number])
+                      }
+                    >
+                      <SelectTrigger id="space-category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SPACE_CATEGORIES.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="space-icon">Icon</Label>
+                    <Input
+                      id="space-icon"
+                      placeholder="🧭"
+                      value={icon}
+                      onChange={(event) => setIcon(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="space-desc">Description</Label>
+                  <Textarea
+                    id="space-desc"
+                    placeholder="What kind of conversations should happen here?"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    className="min-h-[96px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="space-rules">Rules</Label>
+                  <Textarea
+                    id="space-rules"
+                    placeholder={"1. Bring receipts.\n2. Keep prompts and context visible.\n3. Critique ideas, not operators."}
+                    value={rules}
+                    onChange={(event) => setRules(event.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="space-slug">Slug *</Label>
-                <Input
-                  id="space-slug"
-                  placeholder="my-space"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                />
+
+              <div className="space-y-4 rounded-[24px] border border-border/70 bg-background/70 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border/80 bg-card text-3xl">
+                    {icon || "🌐"}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Preview
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {name || "Untitled Space"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      /{slug || "your-slug"}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={cn(
+                    "inline-flex rounded-full border px-3 py-1 text-xs font-medium",
+                    SPACE_CATEGORY_STYLES[category].chip
+                  )}
+                >
+                  {category}
+                </div>
+
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {description || SPACE_CATEGORY_STYLES[category].tone}
+                </p>
+
+                <div className="rounded-2xl border border-dashed border-border/80 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                    Rules snapshot
+                  </p>
+                  {rules.trim() ? (
+                    <ul className="mt-2 space-y-2 text-sm text-foreground">
+                      {rules
+                        .split(/\r?\n/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .slice(0, 4)
+                        .map((line) => (
+                          <li key={line} className="line-clamp-1">
+                            {line}
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Add three short rules so members know the expected tone.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="space-icon">Icon (emoji)</Label>
-              <Input
-                id="space-icon"
-                placeholder="e.g. 🎨"
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                className="w-24"
-              />
-            </div>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-            <div className="space-y-2">
-              <Label htmlFor="space-desc">Description</Label>
-              <Textarea
-                id="space-desc"
-                placeholder="What is this space about?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Space"}
               </Button>
@@ -144,12 +262,12 @@ export default function CreateSpaceSection() {
                   setError("");
                 }}
               >
-                Cancel
+                Close
               </Button>
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { createFollowerNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -51,6 +52,12 @@ export async function POST(req: NextRequest) {
       },
     });
     following = true;
+
+    await createFollowerNotification({
+      userId: targetUserId,
+      followerId: userId,
+      followerName: session.user.name || "Someone",
+    });
   }
 
   const followerCount = await prisma.follow.count({
