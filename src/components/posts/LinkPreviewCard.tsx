@@ -20,6 +20,9 @@ export default function LinkPreviewCard({
           src={preview.image}
           alt={preview.title || preview.hostname}
           className="h-40 w-full object-cover"
+          decoding="async"
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
       ) : null}
       <div className="space-y-2 p-4">

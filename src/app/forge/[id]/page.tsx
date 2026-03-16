@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import CommentThread from "@/components/posts/CommentThread";
+import DeferredCommentThread from "@/components/posts/DeferredCommentThread";
 import ForgeVoteSection from "./ForgeVoteSection";
 import { FORGE_STATUS_META, normalizeForgeStatus } from "@/lib/forge";
 import { buildMetadata, summarizeText } from "@/lib/metadata";
@@ -181,7 +181,7 @@ export default async function ForgeBuildPage(props: {
       <Separator />
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Discussion</h2>
-        <CommentThread
+        <DeferredCommentThread
           postId={build.proposalPost.id}
           comments={build.proposalPost.comments}
         />

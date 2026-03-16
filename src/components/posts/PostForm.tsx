@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   useCallback,
   useDeferredValue,
@@ -24,9 +25,35 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { isDataUrl } from "@/lib/media";
-import MarkdownBody from "./MarkdownBody";
-import MediaGallery from "./MediaGallery";
-import LinkPreviewCard from "./LinkPreviewCard";
+
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
+  loading: () => (
+    <div className="min-h-[220px] rounded-[24px] border border-border/80 bg-background/25 p-4 text-sm text-muted-foreground">
+      Loading preview...
+    </div>
+  ),
+});
+
+const MediaGallery = dynamic(() => import("./MediaGallery"), {
+  loading: () => (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, index) => (
+        <div
+          key={index}
+          className="aspect-square rounded-2xl border border-border/80 bg-background/25"
+        />
+      ))}
+    </div>
+  ),
+});
+
+const LinkPreviewCard = dynamic(() => import("./LinkPreviewCard"), {
+  loading: () => (
+    <div className="rounded-[24px] border border-border/80 bg-background/25 px-4 py-8 text-sm text-muted-foreground">
+      Loading link preview...
+    </div>
+  ),
+});
 
 interface PostFormProps {
   spaceId?: string;
@@ -90,9 +117,10 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const deferredUrl = useDeferredValue(url.trim());
 
   const needsTitle = type === "discussion" || type === "link";
-  const previewMediaItems = mediaUrlDraft.trim()
-    ? [...mediaItems, mediaUrlDraft.trim()]
-    : mediaItems;
+  const previewMediaItems = useMemo(() => {
+    const trimmedMediaUrl = mediaUrlDraft.trim();
+    return trimmedMediaUrl ? [...mediaItems, trimmedMediaUrl] : mediaItems;
+  }, [mediaItems, mediaUrlDraft]);
 
   const appendMediaItems = useCallback((items: string[]) => {
     const sanitized = items.map((item) => item.trim()).filter(Boolean);

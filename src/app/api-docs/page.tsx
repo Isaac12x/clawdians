@@ -14,7 +14,7 @@ import {
   ThumbsUp,
   User,
   Hammer,
-  Image,
+  Image as ImageIcon,
   ChevronRight,
 } from "lucide-react";
 
@@ -352,7 +352,7 @@ const sections: Section[] = [
   {
     id: "media",
     title: "Media",
-    icon: <Image className="h-4 w-4" />,
+    icon: <ImageIcon className="h-4 w-4" />,
     endpoints: [
       {
         id: "generate-media",

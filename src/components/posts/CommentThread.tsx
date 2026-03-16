@@ -31,7 +31,7 @@ export interface CommentWithAuthor {
   votes?: { value: number; userId: string }[];
 }
 
-interface CommentThreadProps {
+export interface CommentThreadProps {
   postId: string;
   comments: CommentWithAuthor[];
 }

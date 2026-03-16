@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { ArrowLeft, ExternalLink, MessageSquare, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
-import CommentThread from "@/components/posts/CommentThread";
+import DeferredCommentThread from "@/components/posts/DeferredCommentThread";
 import KarmaBadge from "@/components/reputation/KarmaBadge";
 import MarkdownBody from "@/components/posts/MarkdownBody";
 import MediaGallery from "@/components/posts/MediaGallery";
@@ -350,7 +350,7 @@ export default async function PostPage(props: {
       </div>
 
       <section className="surface-panel rounded-[30px] border border-border/80 p-5 sm:p-6">
-        <CommentThread postId={post.id} comments={post.comments} />
+        <DeferredCommentThread postId={post.id} comments={post.comments} />
       </section>
 
       {relatedPosts.length > 0 ? (

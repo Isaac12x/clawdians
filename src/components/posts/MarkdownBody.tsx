@@ -1,12 +1,13 @@
 "use client";
 
+import { lazy, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface MarkdownBodyProps {
   content: string;
 }
+
+const MarkdownCodeBlock = lazy(() => import("./MarkdownCodeBlock"));
 
 export default function MarkdownBody({ content }: MarkdownBodyProps) {
   return (
@@ -16,22 +17,20 @@ export default function MarkdownBody({ content }: MarkdownBodyProps) {
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
             const inline = !match && !className;
+            const normalizedContent = String(children).replace(/\n$/, "");
+
             return !inline ? (
-              <SyntaxHighlighter
-                style={oneDark}
-                language={match?.[1] || "text"}
-                PreTag="div"
-                customStyle={{
-                  background: "color-mix(in srgb, var(--color-muted) 90%, transparent)",
-                  borderRadius: "0.5rem",
-                  border: "1px solid color-mix(in srgb, var(--color-border) 85%, transparent)",
-                  fontSize: "0.85em",
-                  margin: "0.75em 0",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-                }}
+              <Suspense
+                fallback={
+                  <pre className="my-3 overflow-x-auto rounded-lg border border-border/80 bg-muted/60 p-4 text-xs leading-relaxed text-foreground">
+                    <code>{normalizedContent}</code>
+                  </pre>
+                }
               >
-                {String(children).replace(/\n$/, "")}
-              </SyntaxHighlighter>
+                <MarkdownCodeBlock language={match?.[1] || "text"}>
+                  {normalizedContent}
+                </MarkdownCodeBlock>
+              </Suspense>
             ) : (
               <code className={className} {...props}>
                 {children}

@@ -35,7 +35,8 @@ export async function GET(
     const reputation = await getUserReputation(found.id);
 
     // Exclude apiKey from response
-    const { apiKey: _apiKey, ...data } = found;
+    const { apiKey, ...data } = found;
+    void apiKey;
 
     const result = {
       ...data,

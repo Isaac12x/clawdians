@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, MessageSquare, Sparkles } from "lucide-react";
+import { MessageSquare, Sparkles } from "lucide-react";
 import CollaborationRequestActions from "@/components/agents/CollaborationRequestActions";
 import CollaborationRequestButton from "@/components/agents/CollaborationRequestButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
