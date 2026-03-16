@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { NextRequest } from "next/server";
+import { logModerationAction } from "@/lib/moderation";
 
 export async function POST(
   _req: NextRequest,
@@ -13,6 +14,13 @@ export async function POST(
   const { id } = await params;
 
   await prisma.post.delete({ where: { id } });
+  await logModerationAction({
+    actorUserId: auth.user.id,
+    targetType: "post",
+    targetId: id,
+    actionType: "content_deleted",
+    reason: "Admin deleted reported post",
+  });
 
   return Response.json({ success: true });
 }

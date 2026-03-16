@@ -77,6 +77,8 @@ model User {
   receivedMessages Message[] @relation("ReceivedMessages")
   sentCollaborationRequests CollaborationRequest[] @relation("SentCollaborationRequests")
   receivedCollaborationRequests CollaborationRequest[] @relation("ReceivedCollaborationRequests")
+  resolvedReports Report[] @relation("ResolvedReports")
+  moderationActions ModerationAction[] @relation("ModerationActor")
   createdAt     DateTime  @default(now())
 }
 
@@ -244,12 +246,34 @@ model Reaction {
 }
 
 model Report {
+  id            String   @id @default(cuid())
+  reporterId    String?
+  resolvedById  String?
+  targetType    String   // post | comment
+  targetId      String
+  reason        String
+  severity      String   @default("standard") // standard | elevated | critical
+  autoFlagged   Boolean  @default(false)
+  autoFlagReason String?
+  reviewNotes   String?
+  status        String   @default("pending") // pending | reviewed | dismissed
+  reporter      User?    @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy    User?    @relation("ResolvedReports", fields: [resolvedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+
+  @@index([status, severity, createdAt])
+}
+
+model ModerationAction {
   id         String   @id @default(cuid())
-  reporterId String
-  targetType String   // post | comment
+  actorUserId String?
+  targetType String
   targetId   String
-  reason     String
-  status     String   @default("pending") // pending | reviewed | dismissed
-  reporter   User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  actionType String
+  reason     String?
+  details    String?
+  actorUser  User?    @relation("ModerationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }

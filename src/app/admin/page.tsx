@@ -5,6 +5,7 @@ import { timeAgo } from "@/lib/utils";
 import { ReportActions, UserBanButton } from "./AdminActions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buildMetadata } from "@/lib/metadata";
+import { getUserReputation } from "@/lib/reputation";
 
 export const metadata = buildMetadata({
   title: "Admin",
@@ -62,6 +63,7 @@ export default async function AdminPage() {
         title?: string | null;
         body?: string | null;
         postId?: string;
+        authorId?: string;
         authorName?: string | null;
       } | null = null;
 
@@ -72,7 +74,7 @@ export default async function AdminPage() {
             id: true,
             title: true,
             body: true,
-            author: { select: { name: true } },
+            author: { select: { id: true, name: true } },
           },
         });
         if (post)
@@ -80,6 +82,7 @@ export default async function AdminPage() {
             id: post.id,
             title: post.title,
             body: post.body,
+            authorId: post.author.id,
             authorName: post.author.name,
           };
       } else if (report.targetType === "comment") {
@@ -89,7 +92,7 @@ export default async function AdminPage() {
             id: true,
             body: true,
             postId: true,
-            author: { select: { name: true } },
+            author: { select: { id: true, name: true } },
           },
         });
         if (comment)
@@ -97,22 +100,57 @@ export default async function AdminPage() {
             id: comment.id,
             body: comment.body,
             postId: comment.postId,
+            authorId: comment.author.id,
             authorName: comment.author.name,
           };
       }
+
+      const authorReputation = target?.authorId
+        ? await getUserReputation(target.authorId)
+        : null;
 
       return {
         id: report.id,
         targetType: report.targetType,
         targetId: report.targetId,
         reason: report.reason,
+        severity: report.severity,
+        autoFlagged: report.autoFlagged,
+        autoFlagReason: report.autoFlagReason,
+        reviewNotes: report.reviewNotes,
         status: report.status,
         createdAt: report.createdAt.toISOString(),
-        reporterName: report.reporter.name,
+        reporterName: report.reporter?.name || "Auto-moderation",
+        authorKarma: authorReputation?.total ?? null,
         target,
       };
     })
   );
+
+  hydratedReports.sort((left, right) => {
+    const severityRank = { critical: 3, elevated: 2, standard: 1 };
+    const severityDiff =
+      (severityRank[right.severity as keyof typeof severityRank] || 0) -
+      (severityRank[left.severity as keyof typeof severityRank] || 0);
+    if (severityDiff !== 0) return severityDiff;
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  });
+
+  const moderationActions = await prisma.moderationAction.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      actorUser: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  const autoFlagCount = hydratedReports.filter((report) => report.autoFlagged).length;
+  const criticalCount = hydratedReports.filter((report) => report.severity === "critical").length;
 
   // Fetch recent users
   const users = await prisma.user.findMany({
@@ -141,9 +179,17 @@ export default async function AdminPage() {
 
       {/* Reports Section */}
       <section className="mb-12">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Pending Reports ({hydratedReports.length})
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            Pending Reports ({hydratedReports.length})
+          </h2>
+          <span className="inline-flex items-center rounded-full border border-border/70 bg-background/35 px-3 py-1 text-xs text-muted-foreground">
+            {autoFlagCount} auto-flagged
+          </span>
+          <span className="inline-flex items-center rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200">
+            {criticalCount} critical
+          </span>
+        </div>
         {hydratedReports.length === 0 ? (
           <div className="surface-panel rounded-lg border border-border/80 p-8 text-center text-muted-foreground">
             No pending reports.
@@ -161,6 +207,14 @@ export default async function AdminPage() {
                       <span className="inline-flex items-center rounded-md border-transparent bg-primary/20 text-primary px-2 py-0.5 text-xs font-semibold">
                         {report.targetType}
                       </span>
+                      <span className="inline-flex items-center rounded-md border border-border/70 bg-background/30 px-2 py-0.5 text-xs font-semibold text-foreground">
+                        {report.severity}
+                      </span>
+                      {report.autoFlagged ? (
+                        <span className="inline-flex items-center rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200">
+                          auto-flagged
+                        </span>
+                      ) : null}
                       <span className="text-xs text-muted-foreground">
                         Reported by {report.reporterName || "Unknown"}{" "}
                         &middot; {timeAgo(report.createdAt)}
@@ -174,6 +228,7 @@ export default async function AdminPage() {
                       <div className="surface-panel-muted mt-2 rounded border border-border/80 p-3 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">
                           By {report.target.authorName || "Unknown"}
+                          {report.authorKarma !== null ? ` · ${report.authorKarma} karma` : ""}
                         </p>
                         {report.target.title && (
                           <p className="font-medium text-foreground">
@@ -187,6 +242,16 @@ export default async function AdminPage() {
                         )}
                       </div>
                     )}
+                    {report.autoFlagReason ? (
+                      <p className="mt-2 text-xs text-amber-200">
+                        Auto-flag signal: {report.autoFlagReason}
+                      </p>
+                    ) : null}
+                    {report.reviewNotes ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Context: {report.reviewNotes}
+                      </p>
+                    ) : null}
                     {!report.target && (
                       <p className="mt-2 text-xs text-muted-foreground italic">
                         Content has been deleted.
@@ -207,6 +272,48 @@ export default async function AdminPage() {
                 />
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mb-12">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          Transparency Log
+        </h2>
+        {moderationActions.length === 0 ? (
+          <div className="surface-panel rounded-lg border border-border/80 p-8 text-center text-muted-foreground">
+            No moderation actions logged yet.
+          </div>
+        ) : (
+          <div className="surface-panel overflow-hidden rounded-lg border border-border/80">
+            <div className="divide-y divide-border/70">
+              {moderationActions.map((action) => (
+                <div key={action.id} className="flex flex-col gap-2 px-4 py-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {action.actionType.replace(/_/g, " ")}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {action.targetType} · {action.targetId}
+                    </p>
+                    {action.reason ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {action.reason}
+                      </p>
+                    ) : null}
+                    {action.details ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {action.details}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="text-xs text-muted-foreground md:text-right">
+                    <p>{action.actorUser?.name || "System"}</p>
+                    <p>{timeAgo(action.createdAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>

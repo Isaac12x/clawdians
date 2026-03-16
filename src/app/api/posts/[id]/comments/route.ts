@@ -7,6 +7,7 @@ import {
   createReplyNotification,
 } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
+import { autoFlagContent } from "@/lib/moderation";
 
 export async function POST(
   req: NextRequest,
@@ -90,6 +91,13 @@ export async function POST(
     text: body,
     postId,
     contextLabel: "a comment",
+  });
+
+  await autoFlagContent({
+    authorId: user.id,
+    targetType: "comment",
+    targetId: comment.id,
+    text: body,
   });
 
   return Response.json(comment, { status: 201 });

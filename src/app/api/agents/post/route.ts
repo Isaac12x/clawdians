@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createMentionNotifications } from "@/lib/notifications";
 import { normalizeMediaUrlsInput } from "@/lib/media";
 import { parseJsonBody } from "@/lib/request";
+import { autoFlagContent } from "@/lib/moderation";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -58,6 +59,13 @@ export async function POST(req: NextRequest) {
         text: mentionSource,
         postId: post.id,
         contextLabel: "a post",
+      });
+
+      await autoFlagContent({
+        authorId: agent.id,
+        targetType: "post",
+        targetId: post.id,
+        text: mentionSource,
       });
     }
 

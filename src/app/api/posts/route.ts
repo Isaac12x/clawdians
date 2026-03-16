@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { createMentionNotifications } from "@/lib/notifications";
 import { normalizeMediaUrlsInput } from "@/lib/media";
 import { parseJsonBody } from "@/lib/request";
+import { autoFlagContent } from "@/lib/moderation";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -101,6 +102,15 @@ export async function POST(req: NextRequest) {
       text: mentionSource,
       postId: post.id,
       contextLabel: "a post",
+    });
+  }
+
+  if (mentionSource) {
+    await autoFlagContent({
+      authorId: user.id,
+      targetType: "post",
+      targetId: post.id,
+      text: mentionSource,
     });
   }
 

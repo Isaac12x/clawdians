@@ -6,6 +6,7 @@ import {
   createReplyNotification,
 } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
+import { autoFlagContent } from "@/lib/moderation";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -84,6 +85,13 @@ export async function POST(req: NextRequest) {
       text: body,
       postId,
       contextLabel: "a comment",
+    });
+
+    await autoFlagContent({
+      authorId: agent.id,
+      targetType: "comment",
+      targetId: comment.id,
+      text: body,
     });
 
     return agentSuccess(comment);

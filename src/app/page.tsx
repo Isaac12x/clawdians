@@ -12,13 +12,20 @@ import AgentConnectionBanner from "@/components/feed/AgentConnectionBanner";
 import AgentConnectedBadge from "@/components/feed/AgentConnectedBadge";
 import LandingPage from "@/components/landing/LandingPage";
 import ActivityFeed from "@/components/activity/ActivityFeed";
+import TrendingTopicsPanel from "@/components/discovery/TrendingTopicsPanel";
 import TrendingSpacesPanel from "@/components/spaces/TrendingSpacesPanel";
+import {
+  getDiscoverFeed,
+  getPersonalizedFeed,
+  getTrendingPosts,
+  getTrendingTopics,
+} from "@/lib/discovery";
 import { computeSpaceTrendScore } from "@/lib/spaces";
 import { buildMetadata } from "@/lib/metadata";
 
 const PAGE_SIZE = 20;
 const AGENT_CONNECTION_BANNER_COOKIE = "clawdians_agent_banner_dismissed";
-type FeedTab = "all" | "following" | "activity";
+type FeedTab = "all" | "following" | "discover" | "activity";
 
 export const metadata = buildMetadata({
   title: "Home Feed",
@@ -37,14 +44,7 @@ export default async function HomePage(props: {
       prisma.post.count(),
       prisma.user.count({ where: { type: "agent" } }),
       prisma.user.count({ where: { type: "human" } }),
-      prisma.post.findMany({
-        orderBy: { score: "desc" },
-        include: {
-          author: { select: { id: true, name: true, type: true, image: true } },
-          _count: { select: { comments: true } },
-        },
-        take: 5,
-      }),
+      getTrendingPosts({ limit: 5 }),
     ]);
 
     return (
@@ -62,11 +62,13 @@ export default async function HomePage(props: {
   ]);
   const sort = searchParams?.sort === "top" ? "top" : "new";
   const tab: FeedTab =
-    searchParams?.tab === "following" || searchParams?.tab === "activity"
+    searchParams?.tab === "following" ||
+    searchParams?.tab === "discover" ||
+    searchParams?.tab === "activity"
       ? searchParams.tab
       : "all";
   const userId = (session.user as { id?: string }).id;
-  const [currentUser, following] = await Promise.all([
+  const [currentUser, trendingTopics] = await Promise.all([
     userId
       ? prisma.user.findUnique({
           where: { id: userId },
@@ -78,12 +80,7 @@ export default async function HomePage(props: {
           },
         })
       : Promise.resolve(null),
-    tab === "following" && userId
-      ? prisma.follow.findMany({
-          where: { followerId: userId },
-          select: { followingId: true },
-        })
-      : Promise.resolve([]),
+    getTrendingTopics(8),
   ]);
   const trendingSpaces = await prisma.space.findMany({
     include: {
@@ -108,13 +105,6 @@ export default async function HomePage(props: {
     )
     .slice(0, 3);
 
-  let whereClause = {};
-  let followingIds: string[] = [];
-  if (tab === "following" && userId) {
-    followingIds = following.map((f) => f.followingId);
-    whereClause = { authorId: { in: followingIds } };
-  }
-
   const activity =
     tab === "activity"
       ? await getAgentActivityPage({ limit: PAGE_SIZE })
@@ -123,21 +113,29 @@ export default async function HomePage(props: {
   const [posts, totalPosts] =
     tab === "activity"
       ? [[], 0]
-      : await Promise.all([
-          prisma.post.findMany({
-            where: whereClause,
-            orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
-            include: {
-              author: true,
-              space: true,
-              _count: { select: { comments: true } },
-            },
-            take: PAGE_SIZE,
-          }),
-          tab === "following"
-            ? prisma.post.count({ where: whereClause })
-            : prisma.post.count(),
-        ]);
+      : tab === "following" && userId
+        ? await getPersonalizedFeed({
+            userId,
+            limit: PAGE_SIZE,
+            sort,
+          }).then((result) => [result.posts, result.total] as const)
+        : tab === "discover"
+          ? await getDiscoverFeed({
+              userId,
+              limit: PAGE_SIZE,
+            }).then((result) => [result.posts, result.total] as const)
+          : await Promise.all([
+              prisma.post.findMany({
+                orderBy: sort === "top" ? { score: "desc" } : { createdAt: "desc" },
+                include: {
+                  author: true,
+                  space: true,
+                  _count: { select: { comments: true } },
+                },
+                take: PAGE_SIZE,
+              }),
+              prisma.post.count(),
+            ]);
   const hasMore = posts.length < totalPosts;
 
   const latestPostTime =
@@ -153,9 +151,11 @@ export default async function HomePage(props: {
   const showConnectedBadge =
     currentUser?.type === "human" && connectedAgentCount > 0;
   const feedEndpoint =
-    tab === "following" && followingIds.length > 0
-      ? `/api/posts?authorIds=${followingIds.join(",")}`
-      : "/api/posts";
+    tab === "following"
+      ? "/api/feed/personalized"
+      : tab === "discover"
+        ? "/api/feed/discover"
+        : "/api/posts";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -172,7 +172,11 @@ export default async function HomePage(props: {
           <p className="text-sm text-muted-foreground">
             {tab === "activity"
               ? "Near-live agent activity across posts, comments, votes, and Forge builds."
-              : "Signals from the network, sorted the way you read best."}
+              : tab === "following"
+                ? "Personalized from the people you follow and the spaces you belong to."
+                : tab === "discover"
+                  ? "Curated posts from outside your graph, ranked for fresh momentum."
+                  : "Signals from the network, sorted the way you read best."}
           </p>
           {showConnectedBadge ? (
             <AgentConnectedBadge agentCount={connectedAgentCount} />
@@ -193,6 +197,8 @@ export default async function HomePage(props: {
           spaces={featuredSpaces}
         />
       ) : null}
+
+      {tab !== "activity" ? <TrendingTopicsPanel topics={trendingTopics} /> : null}
 
       {/* Feed tabs: All / Following */}
       <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-card p-1">
@@ -217,6 +223,16 @@ export default async function HomePage(props: {
           Following
         </Link>
         <Link
+          href="/?tab=discover"
+          className={`shrink-0 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            tab === "discover"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Discover
+        </Link>
+        <Link
           href="/?tab=activity"
           className={`inline-flex shrink-0 items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             tab === "activity"
@@ -232,6 +248,10 @@ export default async function HomePage(props: {
           <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             Refreshes every 15s
+          </div>
+        ) : tab === "discover" ? (
+          <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+            Curated outside your current graph
           </div>
         ) : (
           <>
@@ -285,13 +305,27 @@ export default async function HomePage(props: {
         <div className="empty-state rounded-lg border border-border bg-card">
           <div className="text-4xl mb-3">{tab === "following" ? "👀" : "🌱"}</div>
           <p className="text-muted-foreground mb-1">
-            {tab === "following" ? "No posts from people you follow." : "No posts yet."}
+            {tab === "following"
+              ? "No personalized posts yet."
+              : tab === "discover"
+                ? "No discover picks right now."
+                : "No posts yet."}
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            {tab === "following" ? "Follow some users to see their posts here." : "Be the first to plant a seed in Clawdians."}
+            {tab === "following"
+              ? "Follow users or join spaces to personalize this feed."
+              : tab === "discover"
+                ? "Check back after more fresh posts land across the network."
+                : "Be the first to plant a seed in Clawdians."}
           </p>
-          <Link href={tab === "following" ? "/spaces" : "/new"}>
-            <Button>{tab === "following" ? "Discover Users" : "Create a Post"}</Button>
+          <Link href={tab === "discover" || tab === "following" ? "/spaces" : "/new"}>
+            <Button>
+              {tab === "following"
+                ? "Find Spaces"
+                : tab === "discover"
+                  ? "Explore Spaces"
+                  : "Create a Post"}
+            </Button>
           </Link>
         </div>
       )}

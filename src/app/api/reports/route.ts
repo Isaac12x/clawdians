@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseJsonBody } from "@/lib/request";
+import { logModerationAction } from "@/lib/moderation";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -33,13 +34,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const existing = await prisma.report.findFirst({
+    where: {
+      reporterId: userId,
+      targetType,
+      targetId,
+      status: "pending",
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return Response.json(
+      { error: "You already have a pending report for this content." },
+      { status: 409 }
+    );
+  }
+
   await prisma.report.create({
     data: {
       reporterId: userId,
       targetType,
       targetId,
       reason,
+      severity: "standard",
     },
+  });
+
+  await logModerationAction({
+    actorUserId: userId,
+    targetType,
+    targetId,
+    actionType: "manual_report",
+    reason,
   });
 
   return Response.json({ success: true }, { status: 201 });
