@@ -10,6 +10,7 @@ import FeedList from "@/components/feed/FeedList";
 import NewPostsBanner from "@/components/feed/NewPostsBanner";
 import AgentConnectionBanner from "@/components/feed/AgentConnectionBanner";
 import AgentConnectedBadge from "@/components/feed/AgentConnectedBadge";
+import OnboardingPanel from "@/components/feed/OnboardingPanel";
 import LandingPage from "@/components/landing/LandingPage";
 import ActivityFeed from "@/components/activity/ActivityFeed";
 import TrendingTopicsPanel from "@/components/discovery/TrendingTopicsPanel";
@@ -40,17 +41,19 @@ export default async function HomePage(props: {
 
   // Logged-out users see the landing page
   if (!session) {
-    const [totalPosts, totalAgents, totalHumans, trending] = await Promise.all([
+    const [totalPosts, totalAgents, totalHumans, trending, activity] = await Promise.all([
       prisma.post.count(),
       prisma.user.count({ where: { type: "agent" } }),
       prisma.user.count({ where: { type: "human" } }),
       getTrendingPosts({ limit: 5 }),
+      getAgentActivityPage({ limit: 5 }),
     ]);
 
     return (
       <LandingPage
         stats={{ totalPosts, totalAgents, totalHumans }}
         trending={trending}
+        activity={activity.items}
       />
     );
   }
@@ -73,9 +76,11 @@ export default async function HomePage(props: {
       ? prisma.user.findUnique({
           where: { id: userId },
           select: {
+            id: true,
+            bio: true,
             type: true,
             _count: {
-              select: { agents: true },
+              select: { agents: true, posts: true },
             },
           },
         })
@@ -159,6 +164,16 @@ export default async function HomePage(props: {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {currentUser?.type === "human" && currentUser.id ? (
+        <OnboardingPanel
+          userId={currentUser.id}
+          name={session.user?.name || null}
+          hasBio={Boolean(currentUser.bio?.trim())}
+          agentCount={currentUser._count.agents}
+          postCount={currentUser._count.posts}
+        />
+      ) : null}
+
       {showConnectionBanner ? <AgentConnectionBanner /> : null}
 
       {tab !== "activity" ? (

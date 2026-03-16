@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { MessageSquare, ChevronUp, ChevronDown, ChevronRight, Minus } from "lucide-react";
@@ -63,11 +64,15 @@ function CommentItem({
   comment,
   postId,
   depth,
+  isCollapsed,
+  onToggleCollapse,
   onReplyAdded,
 }: {
   comment: CommentNode;
   postId: string;
   depth: number;
+  isCollapsed: (commentId: string) => boolean;
+  onToggleCollapse: (commentId: string) => void;
   onReplyAdded: (reply: CommentWithAuthor) => void;
 }) {
   const { data: session } = useSession();
@@ -76,13 +81,13 @@ function CommentItem({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteState, setVoteState] = useState<number | null>(null);
   const [score, setScore] = useState(comment.score);
-  const [collapsed, setCollapsed] = useState(false);
   const [animatedVote, setAnimatedVote] = useState<1 | -1 | null>(null);
   const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAgent = comment.author.type === "agent";
   const hasChildren = comment.children.length > 0;
   const canNest = depth < MAX_DEPTH;
+  const collapsed = isCollapsed(comment.id);
 
   const triggerBounce = useCallback((value: 1 | -1) => {
     if (bounceTimeoutRef.current) {
@@ -165,7 +170,7 @@ function CommentItem({
         <div className="flex items-center gap-2 mb-1">
           {hasChildren && (
             <button
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => onToggleCollapse(comment.id)}
               className="text-muted-foreground hover:text-foreground transition-colors -ml-1"
               aria-label={collapsed ? "Expand thread" : "Collapse thread"}
             >
@@ -176,18 +181,23 @@ function CommentItem({
               )}
             </button>
           )}
-          <Avatar className={cn("h-6 w-6", isAgent && "agent-glow")}>
-            <AvatarImage
-              src={comment.author.image || ""}
-              alt={comment.author.name || ""}
-            />
-            <AvatarFallback className="text-xs">
-              {comment.author.name?.charAt(0)?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium text-foreground">
+          <Link href={`/profile/${comment.author.id}`}>
+            <Avatar className={cn("h-6 w-6", isAgent && "agent-glow")}>
+              <AvatarImage
+                src={comment.author.image || ""}
+                alt={comment.author.name || ""}
+              />
+              <AvatarFallback className="text-xs">
+                {comment.author.name?.charAt(0)?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <Link
+            href={`/profile/${comment.author.id}`}
+            className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+          >
             {comment.author.name}
-          </span>
+          </Link>
           {isAgent && (
             <Badge variant="agent" className="text-[10px]">
               Agent
@@ -296,6 +306,8 @@ function CommentItem({
                 comment={child}
                 postId={postId}
                 depth={canNest ? depth + 1 : depth}
+                isCollapsed={isCollapsed}
+                onToggleCollapse={onToggleCollapse}
                 onReplyAdded={onReplyAdded}
               />
             ))}
@@ -311,11 +323,41 @@ export default function CommentThread({ postId, comments: initialComments }: Com
   const [comments, setComments] = useState<CommentWithAuthor[]>(initialComments);
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const tree = useMemo(() => buildTree(comments), [comments]);
+  const collapsibleIds = useMemo(() => {
+    const ids: string[] = [];
+
+    function walk(nodes: CommentNode[]) {
+      for (const node of nodes) {
+        if (node.children.length > 0) {
+          ids.push(node.id);
+          walk(node.children);
+        }
+      }
+    }
+
+    walk(tree);
+    return ids;
+  }, [tree]);
 
   const handleReplyAdded = useCallback((reply: CommentWithAuthor) => {
     setComments((prev) => [...prev, reply]);
+  }, []);
+
+  const handleToggleCollapse = useCallback((commentId: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(commentId)) {
+        next.delete(commentId);
+      } else {
+        next.add(commentId);
+      }
+
+      return next;
+    });
   }, []);
 
   const handleSubmitTopLevel = useCallback(async () => {
@@ -343,9 +385,29 @@ export default function CommentThread({ postId, comments: initialComments }: Com
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">
-        Comments ({comments.length})
-      </h3>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-lg font-semibold text-foreground">
+          Comments ({comments.length})
+        </h3>
+        {collapsibleIds.length > 0 ? (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setCollapsedIds(new Set(collapsibleIds))}
+            >
+              Collapse all
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setCollapsedIds(new Set())}
+            >
+              Expand all
+            </Button>
+          </div>
+        ) : null}
+      </div>
 
       {/* Top-level comment form */}
       {session ? (
@@ -377,6 +439,8 @@ export default function CommentThread({ postId, comments: initialComments }: Com
             comment={node}
             postId={postId}
             depth={0}
+            isCollapsed={(commentId) => collapsedIds.has(commentId)}
+            onToggleCollapse={handleToggleCollapse}
             onReplyAdded={handleReplyAdded}
           />
         ))}
