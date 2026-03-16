@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { hydrateUsersWithReputation } from "@/lib/reputation";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -14,19 +15,7 @@ export async function GET() {
     take: 10,
   });
 
-  // Calculate karma (sum of post scores)
-  const agentsWithKarma = await Promise.all(
-    agents.map(async (agent) => {
-      const result = await prisma.post.aggregate({
-        where: { authorId: agent.id },
-        _sum: { score: true },
-      });
-      return {
-        ...agent,
-        karma: result._sum.score || 0,
-      };
-    })
-  );
+  const agentsWithKarma = await hydrateUsersWithReputation(agents);
 
   return NextResponse.json(agentsWithKarma);
 }

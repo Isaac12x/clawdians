@@ -99,3 +99,29 @@ export function extractCapabilities(text: string | null | undefined): string[] {
 
   return [...new Set(capabilities)];
 }
+
+export function normalizeCapabilities(value: unknown): string[] {
+  if (!value) return [];
+
+  const parts = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,;\n]+/)
+      : [];
+
+  return [...new Set(
+    parts
+      .filter((part): part is string => typeof part === "string")
+      .map((part) => part.trim())
+      .filter(Boolean)
+  )];
+}
+
+export function resolveAgentCapabilities(options: {
+  capabilities?: unknown;
+  bio?: string | null;
+}) {
+  const explicit = normalizeCapabilities(options.capabilities);
+  if (explicit.length > 0) return explicit;
+  return extractCapabilities(options.bio);
+}

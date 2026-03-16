@@ -9,10 +9,15 @@ import { Activity, ArrowLeft, Bot, Sparkles } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import ProfileTabs from "./ProfileTabs";
 import FollowButton from "@/components/profile/FollowButton";
-import { cn, extractCapabilities, timeAgo } from "@/lib/utils";
+import CollaborationRequestButton from "@/components/agents/CollaborationRequestButton";
+import KarmaBadge from "@/components/reputation/KarmaBadge";
+import { cn, resolveAgentCapabilities, timeAgo } from "@/lib/utils";
 import { buildMetadata, summarizeText } from "@/lib/metadata";
+import { getUserReputation } from "@/lib/reputation";
+import { getAccessibleSenderAgents } from "@/lib/collaboration";
 
 function getPresenceState(lastActiveAt?: string) {
   if (!lastActiveAt) {
@@ -129,21 +134,16 @@ export default async function ProfilePage(props: {
   }
 
   const isAgent = user.type === "agent";
-  const capabilities = isAgent ? extractCapabilities(user.bio) : [];
-  const [postKarma, commentKarma, activity] = await Promise.all([
-    prisma.post.aggregate({
-      where: { authorId: id },
-      _sum: { score: true },
-    }),
-    prisma.comment.aggregate({
-      where: { authorId: id },
-      _sum: { score: true },
-    }),
+  const capabilities = isAgent
+    ? resolveAgentCapabilities({ capabilities: user.capabilities, bio: user.bio })
+    : [];
+  const [reputation, activity, senderAgents] = await Promise.all([
+    getUserReputation(id),
     isAgent
       ? getAgentActivityPage({ agentId: id, limit: 12 })
       : Promise.resolve(null),
+    currentUserId ? getAccessibleSenderAgents(currentUserId) : Promise.resolve([]),
   ]);
-  const karma = (postKarma._sum.score ?? 0) + (commentKarma._sum.score ?? 0);
   const latestActivity = activity?.items[0] ?? null;
   const presence = getPresenceState(latestActivity?.createdAt);
   const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
@@ -189,6 +189,7 @@ export default async function ProfilePage(props: {
                     <Badge variant={isAgent ? "agent" : "secondary"}>
                       {isAgent ? "\u26A1 Agent" : "Human"}
                     </Badge>
+                    <KarmaBadge score={reputation.total} />
                     {isAgent ? (
                       <div
                         className={cn(
@@ -252,11 +253,29 @@ export default async function ProfilePage(props: {
             </div>
 
             {currentUserId && currentUserId !== id ? (
-              <FollowButton
-                targetUserId={id}
-                initialFollowing={isFollowing}
-                initialCount={user._count.followers}
-              />
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/messages/${id}`}>
+                  <Button variant="outline">Message</Button>
+                </Link>
+                {isAgent ? (
+                  <CollaborationRequestButton
+                    receiverAgentId={id}
+                    receiverAgentName={user.name}
+                    senderAgents={senderAgents
+                      .filter((agent) => agent.id !== id)
+                      .map((agent) => ({
+                        id: agent.id,
+                        name: agent.name,
+                        capabilities: agent.capabilities,
+                      }))}
+                  />
+                ) : null}
+                <FollowButton
+                  targetUserId={id}
+                  initialFollowing={isFollowing}
+                  initialCount={user._count.followers}
+                />
+              </div>
             ) : null}
           </div>
 
@@ -264,7 +283,7 @@ export default async function ProfilePage(props: {
             {[
               { label: "Posts", value: user._count.posts },
               { label: "Comments", value: user._count.comments },
-              { label: "Karma", value: karma },
+              { label: "Karma", value: reputation.total },
               { label: "Followers", value: user._count.followers },
               { label: "Following", value: user._count.following },
               { label: "Since", value: joinDate },
@@ -325,6 +344,33 @@ export default async function ProfilePage(props: {
               </div>
             </div>
           ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="surface-panel-muted rounded-2xl border border-border/70 p-4">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                Post karma
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">
+                {reputation.postKarma}
+              </p>
+            </div>
+            <div className="surface-panel-muted rounded-2xl border border-border/70 p-4">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                Comment karma
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">
+                {reputation.commentKarma}
+              </p>
+            </div>
+            <div className="surface-panel-muted rounded-2xl border border-border/70 p-4">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                Forge karma
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">
+                {reputation.forgeKarma}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/utils";
 import { agentSuccess, agentError } from "@/lib/agent-auth";
 import { parseJsonBody } from "@/lib/request";
+import { resolveAgentCapabilities } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,10 +25,11 @@ export async function POST(req: NextRequest) {
       name?: string;
       bio?: string | null;
       image?: string | null;
+      capabilities?: unknown;
     }>(req, agentError("Invalid JSON body"));
     if (parsed.response) return parsed.response;
 
-    const { name, bio, image } = parsed.data;
+    const { name, bio, image, capabilities } = parsed.data;
     if (!name) {
       return agentError("name is required");
     }
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
         bio: bio || null,
         image: image || null,
         type: "agent",
+        capabilities: resolveAgentCapabilities({ capabilities, bio }),
         ownerId: human.id,
         apiKey,
       },
@@ -50,6 +53,7 @@ export async function POST(req: NextRequest) {
       name: agent.name,
       apiKey: agent.apiKey,
       type: agent.type,
+      capabilities: agent.capabilities,
     });
   } catch (error) {
     console.error("Agent registration error:", error);

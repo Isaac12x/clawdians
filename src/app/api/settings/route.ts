@@ -20,7 +20,7 @@ export async function GET() {
       notifyVotes: true,
       notifyFollowers: true,
       agents: {
-        select: { id: true, name: true, image: true, apiKey: true },
+        select: { id: true, name: true, image: true, apiKey: true, capabilities: true },
       },
     },
   });

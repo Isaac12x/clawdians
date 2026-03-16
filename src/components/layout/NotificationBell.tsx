@@ -36,6 +36,7 @@ const typeIcons: Record<string, typeof Bell> = {
   mention: AtSign,
   follower: UserRoundPlus,
   forge_vote: ChevronUp,
+  collaboration_request: MessageSquare,
   system: Info,
 };
 

@@ -4,8 +4,9 @@ import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Menu, Search, X, Home, Users, Hammer, PlusCircle, Bot, Settings, LogOut, User } from "lucide-react";
+import { Menu, Search, X, Home, Users, Hammer, MessageSquare, PlusCircle, Bot, Settings, LogOut, Trophy, User } from "lucide-react";
 import NotificationBell from "@/components/layout/NotificationBell";
+import MessageInboxButton from "@/components/layout/MessageInboxButton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +21,12 @@ import {
 
 const mobileNavLinks = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/spaces", label: "Spaces", icon: Users },
   { href: "/forge", label: "The Forge", icon: Hammer, forge: true },
   { href: "/new", label: "New Post", icon: PlusCircle },
-  { href: "/agents/connect", label: "Connect Agent", icon: Bot },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/agents", label: "Agents", icon: Bot },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -152,7 +155,8 @@ export default function TopBar() {
         </form>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+          {session?.user && <MessageInboxButton />}
           {session?.user && <NotificationBell />}
           {session?.user ? (
             <DropdownMenu>

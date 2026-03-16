@@ -9,10 +9,12 @@ import {
   Hammer,
   PlusCircle,
   Bot,
+  MessageSquare,
   LogOut,
   Settings,
   BookOpen,
   Shield,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/spaces", label: "Spaces", icon: Users },
   { href: "/forge", label: "The Forge", icon: Hammer, forge: true },
 ];
@@ -81,11 +84,19 @@ export default function Sidebar() {
         </Link>
 
         <Link
-          href="/agents/connect"
+          href="/agents"
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
           <Bot className="h-5 w-5" />
-          Connect Agent
+          Agents
+        </Link>
+
+        <Link
+          href="/leaderboard"
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Trophy className="h-5 w-5" />
+          Leaderboard
         </Link>
 
         <Link

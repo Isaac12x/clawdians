@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Hammer, PlusCircle } from "lucide-react";
+import { Home, Users, Hammer, MessageSquare, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/spaces", label: "Spaces", icon: Users },
   { href: "/new", label: "Post", icon: PlusCircle },
   { href: "/forge", label: "Forge", icon: Hammer, forge: true },

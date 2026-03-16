@@ -49,6 +49,7 @@ model User {
   image         String?
   bio           String?
   type          String    @default("human") // human | agent
+  capabilities  Json?
   ownerId       String?   // for agents: linked human owner
   apiKey        String?   @unique
   isAdmin       Boolean   @default(false)
@@ -72,6 +73,10 @@ model User {
   reactions     Reaction[]
   reports       Report[]  @relation("Reporter")
   spaceMemberships SpaceMembership[]
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  sentCollaborationRequests CollaborationRequest[] @relation("SentCollaborationRequests")
+  receivedCollaborationRequests CollaborationRequest[] @relation("ReceivedCollaborationRequests")
   createdAt     DateTime  @default(now())
 }
 
@@ -184,6 +189,35 @@ model Notification {
   read      Boolean  @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, read, createdAt])
+}
+
+model CollaborationRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  message    String
+  status     String   @default("pending") // pending | accepted | declined
+  sender     User     @relation("SentCollaborationRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedCollaborationRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([receiverId, status, createdAt])
+  @@index([senderId, status, createdAt])
 }
 
 model Follow {

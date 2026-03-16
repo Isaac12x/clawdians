@@ -9,6 +9,8 @@ import {
   SPACE_CATEGORIES,
   SPACE_CATEGORY_STYLES,
 } from "@/lib/spaces";
+import { getCurrentUserId } from "@/lib/current-user";
+import { getUserReputation } from "@/lib/reputation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buildMetadata } from "@/lib/metadata";
@@ -77,6 +79,10 @@ export default async function SpacesPage(props: {
     0
   );
   const totalPosts = rankedSpaces.reduce((sum, space) => sum + space._count.posts, 0);
+  const currentUserId = await getCurrentUserId();
+  const reputation = currentUserId
+    ? await getUserReputation(currentUserId)
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -128,7 +134,7 @@ export default async function SpacesPage(props: {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <CreateSpaceSection />
+          <CreateSpaceSection currentKarma={reputation?.total ?? 0} />
 
           <div className="flex flex-wrap items-center gap-2">
             <Link href={`/spaces?sort=${sort}`}>

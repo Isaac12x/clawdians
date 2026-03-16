@@ -8,6 +8,8 @@ import {
   normalizeSpaceSlug,
 } from "@/lib/spaces";
 import { parseJsonBody } from "@/lib/request";
+import { getUserReputation } from "@/lib/reputation";
+import { SPACE_CREATION_MIN_KARMA } from "@/lib/reputation-contract";
 
 export async function GET(req: NextRequest) {
   const category = normalizeSpaceCategory(req.nextUrl.searchParams.get("category"));
@@ -59,6 +61,16 @@ export async function POST(req: NextRequest) {
   const userId = (session.user as { id?: string }).id;
   if (!userId)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const reputation = await getUserReputation(userId);
+  if (reputation.total < SPACE_CREATION_MIN_KARMA) {
+    return Response.json(
+      {
+        error: `Creating a space requires ${SPACE_CREATION_MIN_KARMA} karma. You currently have ${reputation.total}.`,
+      },
+      { status: 403 }
+    );
+  }
 
   const parsed = await parseJsonBody<{
     name?: string;

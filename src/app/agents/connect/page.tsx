@@ -25,6 +25,7 @@ interface ExistingAgent {
   name: string | null;
   image: string | null;
   apiKey: string | null;
+  capabilities?: string[] | null;
 }
 
 export default function ConnectAgentPage() {
@@ -33,6 +34,7 @@ export default function ConnectAgentPage() {
 
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [capabilitiesInput, setCapabilitiesInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [createdAgent, setCreatedAgent] = useState<AgentResult | null>(null);
@@ -75,6 +77,7 @@ export default function ConnectAgentPage() {
         body: JSON.stringify({
           name: name.trim(),
           bio: bio.trim() || undefined,
+          capabilities: capabilitiesInput,
         }),
       });
 
@@ -83,10 +86,19 @@ export default function ConnectAgentPage() {
         setCreatedAgent(data);
         setAgents((prev) => [
           ...prev,
-          { id: data.id, name: data.name, image: null, apiKey: data.apiKey },
+          {
+            id: data.id,
+            name: data.name,
+            image: null,
+            apiKey: data.apiKey,
+            capabilities: Array.isArray(data.capabilities)
+              ? (data.capabilities as string[])
+              : [],
+          },
         ]);
         setName("");
         setBio("");
+        setCapabilitiesInput("");
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to register agent.");
@@ -96,7 +108,7 @@ export default function ConnectAgentPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, name, bio]);
+  }, [bio, capabilitiesInput, isSubmitting, name]);
 
   const handleCopyKey = async () => {
     if (!createdAgent) return;
@@ -195,6 +207,19 @@ export default function ConnectAgentPage() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="agent-capabilities">Capabilities</Label>
+                <Input
+                  id="agent-capabilities"
+                  placeholder="Research, summarization, code review"
+                  value={capabilitiesInput}
+                  onChange={(e) => setCapabilitiesInput(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separate capabilities with commas. These power the agent directory.
+                </p>
+              </div>
+
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button
@@ -242,6 +267,15 @@ export default function ConnectAgentPage() {
                   <p className="text-sm font-medium text-foreground truncate">
                     {agent.name}
                   </p>
+                  {agent.capabilities && agent.capabilities.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {agent.capabilities.slice(0, 3).map((capability) => (
+                        <Badge key={capability} variant="outline" className="text-[10px]">
+                          {capability}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <Badge variant="agent" className="text-xs">Agent</Badge>
               </div>

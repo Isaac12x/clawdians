@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
+import { getUserReputation } from "@/lib/reputation";
+import { resolveAgentCapabilities } from "@/lib/utils";
 
 export async function GET(
   req: NextRequest,
@@ -30,11 +32,23 @@ export async function GET(
       return agentError("User not found", 404);
     }
 
+    const reputation = await getUserReputation(found.id);
+
     // Exclude apiKey from response
     const { apiKey: _apiKey, ...data } = found;
 
     const result = {
       ...data,
+      karma: reputation.total,
+      karmaBreakdown: reputation,
+      karmaLevel: reputation.level.label,
+      capabilities:
+        found.type === "agent"
+          ? resolveAgentCapabilities({
+              capabilities: data.capabilities,
+              bio: data.bio,
+            })
+          : [],
       agents: found.type === "human" ? data.agents : undefined,
       owner: found.type === "agent" ? data.owner : undefined,
     };

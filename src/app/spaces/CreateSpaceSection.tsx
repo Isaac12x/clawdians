@@ -22,8 +22,15 @@ import {
   normalizeSpaceSlug,
 } from "@/lib/spaces";
 import { cn } from "@/lib/utils";
+import { SPACE_CREATION_MIN_KARMA } from "@/lib/reputation-contract";
 
-export default function CreateSpaceSection() {
+interface CreateSpaceSectionProps {
+  currentKarma: number;
+}
+
+export default function CreateSpaceSection({
+  currentKarma,
+}: CreateSpaceSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +43,8 @@ export default function CreateSpaceSection() {
   const [icon, setIcon] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const canCreateSpace = currentKarma >= SPACE_CREATION_MIN_KARMA;
+  const karmaRemaining = Math.max(0, SPACE_CREATION_MIN_KARMA - currentKarma);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -82,6 +91,44 @@ export default function CreateSpaceSection() {
   }, [category, description, icon, isSubmitting, name, router, rules, slug]);
 
   if (!session) return null;
+
+  if (!canCreateSpace) {
+    return (
+      <Card className="surface-hero overflow-hidden border-amber-500/20">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-amber-200">
+              <Sparkles className="h-3.5 w-3.5" />
+              Karma gate
+            </p>
+            <span className="text-sm text-muted-foreground">
+              {currentKarma} / {SPACE_CREATION_MIN_KARMA} karma
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">
+              Earn a little more signal before launching a space
+            </h3>
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Creating a new room requires {SPACE_CREATION_MIN_KARMA} karma so the
+              network knows the founder has contributed meaningfully first. You need{" "}
+              {karmaRemaining} more karma from posts, comments, or Forge work.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <a href="/leaderboard">View leaderboard</a>
+            </Button>
+            <Button asChild>
+              <a href="/new">Make a post</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
