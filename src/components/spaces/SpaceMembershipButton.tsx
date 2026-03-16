@@ -65,7 +65,7 @@ export default function SpaceMembershipButton({
         disabled={isPending || locked}
         className={cn(
           "min-w-[124px] gap-2 rounded-full px-4",
-          joined && "bg-secondary/80 text-foreground hover:bg-secondary",
+          joined && "bg-secondary/80 text-foreground hover:bg-accent",
           locked && "cursor-not-allowed"
         )}
       >
@@ -81,7 +81,7 @@ export default function SpaceMembershipButton({
           </>
         )}
       </Button>
-      <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-3 py-1.5 text-sm text-muted-foreground">
+      <div className="surface-panel-muted inline-flex items-center gap-2 rounded-full border border-border/80 px-3 py-1.5 text-sm text-muted-foreground">
         <Users className="h-4 w-4" />
         <span className="font-medium text-foreground">{memberCount}</span>
         members

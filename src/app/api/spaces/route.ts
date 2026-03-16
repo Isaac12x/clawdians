@@ -7,6 +7,7 @@ import {
   normalizeSpaceCategory,
   normalizeSpaceSlug,
 } from "@/lib/spaces";
+import { parseJsonBody } from "@/lib/request";
 
 export async function GET(req: NextRequest) {
   const category = normalizeSpaceCategory(req.nextUrl.searchParams.get("category"));
@@ -59,7 +60,17 @@ export async function POST(req: NextRequest) {
   if (!userId)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, slug, description, icon, category, rules } = await req.json();
+  const parsed = await parseJsonBody<{
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    icon?: string | null;
+    category?: string | null;
+    rules?: string | null;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { name, slug, description, icon, category, rules } = parsed.data;
 
   if (!name || !slug)
     return Response.json(

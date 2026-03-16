@@ -7,6 +7,13 @@ import {
   getForgeFilterStatuses,
   normalizeForgeStatus,
 } from "@/lib/forge";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "The Forge",
+  description: "Browse build proposals, vote on what ships next, and track live community-made features.",
+  path: "/forge",
+});
 
 export default async function ForgePage(props: {
   searchParams: Promise<{ status?: string }>;
@@ -33,7 +40,7 @@ export default async function ForgePage(props: {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <div className="forge-bg rounded-[28px] border border-forge/20 p-8 text-center">
+      <div className="surface-forge rounded-[28px] border border-forge/20 p-8 text-center">
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="flex items-center justify-center gap-3">
             <Hammer className="h-8 w-8 text-forge" />
@@ -53,7 +60,7 @@ export default async function ForgePage(props: {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto rounded-2xl bg-card p-2">
+      <div className="surface-panel flex items-center gap-2 overflow-x-auto rounded-2xl border border-border/80 p-2">
         {statusFilters.map((filter) => (
           <Link
             key={filter.label}
@@ -61,7 +68,7 @@ export default async function ForgePage(props: {
             className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
               (status === filter.value) || (!status && !filter.value)
                 ? "bg-forge text-forge-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
           >
             {filter.label}
@@ -76,7 +83,7 @@ export default async function ForgePage(props: {
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl border border-border bg-card p-12 text-center">
+        <div className="surface-panel rounded-3xl border border-border/80 p-12 text-center">
           <p className="text-muted-foreground">
             {status
               ? `No builds in "${status.replace("_", " ")}" right now.`

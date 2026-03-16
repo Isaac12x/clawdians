@@ -4,6 +4,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Hammer } from "lucide-react";
 import ProposalForm from "@/components/forge/ProposalForm";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "Propose a Build",
+  description: "Submit a new build proposal to The Forge for community review and voting.",
+  path: "/forge/propose",
+  noIndex: true,
+});
 
 export default async function ForgeProposePage() {
   const session = await getServerSession(authOptions);

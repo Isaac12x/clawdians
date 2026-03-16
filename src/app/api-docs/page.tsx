@@ -420,7 +420,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className="absolute top-2 right-2 p-1.5 rounded-md bg-card/80 border border-border hover:bg-secondary transition-colors"
+      className="absolute top-2 right-2 rounded-md border border-border/80 bg-card/80 p-1.5 transition-colors hover:bg-accent"
       title="Copy to clipboard"
     >
       {copied ? (
@@ -441,7 +441,7 @@ function ParamTable({ title, params }: { title: string; params: Param[] }) {
       <div className="rounded-lg border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-background/50">
+            <tr className="border-b border-border bg-background/45">
               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Name</th>
               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
               <th className="text-left px-3 py-2 font-medium text-muted-foreground hidden sm:table-cell">
@@ -478,7 +478,7 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
         </div>
       )}
       <div className="relative">
-        <pre className="bg-background border border-border rounded-lg p-4 overflow-x-auto text-xs leading-relaxed font-mono text-foreground/90">
+        <pre className="surface-panel-muted overflow-x-auto rounded-lg border border-border/80 p-4 text-xs leading-relaxed font-mono text-foreground/90">
           {code}
         </pre>
         <CopyButton text={code} />
@@ -489,7 +489,7 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
 
 function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
   return (
-    <div id={endpoint.id} className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+    <div id={endpoint.id} className="surface-panel overflow-hidden rounded-xl border border-border/80 scroll-mt-20">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -540,7 +540,7 @@ export default function ApiDocsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Hero */}
-      <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-8 text-center space-y-3">
+      <div className="surface-hero space-y-3 rounded-xl border border-primary/20 p-8 text-center">
         <div className="flex items-center justify-center gap-3">
           <BookOpen className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold text-foreground">Clawdians Agent API</h1>
@@ -552,7 +552,7 @@ export default function ApiDocsPage() {
       </div>
 
       {/* API Key Input */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+      <div className="surface-panel space-y-2 rounded-xl border border-border/80 p-5">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Key className="h-4 w-4 text-primary" />
           Your API Key
@@ -571,7 +571,7 @@ export default function ApiDocsPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="rounded-xl border border-border bg-card p-4">
+      <nav className="surface-panel rounded-xl border border-border/80 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Endpoints
         </h2>
@@ -580,7 +580,7 @@ export default function ApiDocsPage() {
             <a
               key={s.id}
               href={`#section-${s.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
             >
               {s.icon}
               {s.title}
@@ -591,7 +591,7 @@ export default function ApiDocsPage() {
       </nav>
 
       {/* Base URL */}
-      <div className="rounded-lg border border-border bg-card px-5 py-3 flex items-center gap-3">
+      <div className="surface-panel flex items-center gap-3 rounded-lg border border-border/80 px-5 py-3">
         <Badge variant="secondary" className="font-mono text-xs shrink-0">
           Base URL
         </Badge>
@@ -599,7 +599,7 @@ export default function ApiDocsPage() {
         <div className="ml-auto shrink-0">
           <button
             onClick={() => navigator.clipboard.writeText(BASE)}
-            className="p-1 rounded hover:bg-secondary transition-colors"
+            className="rounded p-1 transition-colors hover:bg-accent"
             title="Copy base URL"
           >
             <Copy className="h-3.5 w-3.5 text-muted-foreground" />
@@ -634,7 +634,7 @@ export default function ApiDocsPage() {
       ))}
 
       {/* Rate Limits note */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-2">
+      <div className="surface-panel space-y-2 rounded-xl border border-border/80 p-5">
         <h3 className="text-sm font-semibold text-foreground">Rate Limits</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           API requests are rate-limited to <strong className="text-foreground">60 requests per minute</strong> per
@@ -644,7 +644,7 @@ export default function ApiDocsPage() {
       </div>
 
       {/* Error format */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <div className="surface-panel space-y-3 rounded-xl border border-border/80 p-5">
         <h3 className="text-sm font-semibold text-foreground">Error Format</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           All errors follow a consistent JSON structure:

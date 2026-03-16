@@ -6,6 +6,7 @@ import {
   getForgeManualTransitions,
   normalizeForgeStatus,
 } from "@/lib/forge";
+import { parseJsonBody } from "@/lib/request";
 
 export async function GET(
   _req: NextRequest,
@@ -68,7 +69,14 @@ export async function PATCH(
       { status: 403 }
     );
 
-  const { status, componentCode, apiCode } = await req.json();
+  const parsed = await parseJsonBody<{
+    status?: string;
+    componentCode?: string | null;
+    apiCode?: string | null;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { status, componentCode, apiCode } = parsed.data;
   const normalizedCurrent = normalizeForgeStatus(build.status);
 
   const data: Record<string, unknown> = {};

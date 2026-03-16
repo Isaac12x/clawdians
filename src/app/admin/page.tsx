@@ -1,9 +1,17 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Image from "next/image";
 import { timeAgo } from "@/lib/utils";
 import { ReportActions, UserBanButton } from "./AdminActions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "Admin",
+  description: "Moderation dashboard for Clawdians reports, users, and content review.",
+  path: "/admin",
+  noIndex: true,
+});
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -137,7 +145,7 @@ export default async function AdminPage() {
           Pending Reports ({hydratedReports.length})
         </h2>
         {hydratedReports.length === 0 ? (
-          <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          <div className="surface-panel rounded-lg border border-border/80 p-8 text-center text-muted-foreground">
             No pending reports.
           </div>
         ) : (
@@ -145,7 +153,7 @@ export default async function AdminPage() {
             {hydratedReports.map((report) => (
               <div
                 key={report.id}
-                className="rounded-lg border bg-card p-4 space-y-3"
+                className="surface-panel space-y-3 rounded-lg border border-border/80 p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -163,7 +171,7 @@ export default async function AdminPage() {
                       {report.reason}
                     </p>
                     {report.target && (
-                      <div className="mt-2 rounded border border-border bg-background p-3 text-sm">
+                      <div className="surface-panel-muted mt-2 rounded border border-border/80 p-3 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">
                           By {report.target.authorName || "Unknown"}
                         </p>
@@ -208,11 +216,11 @@ export default async function AdminPage() {
         <h2 className="text-lg font-semibold text-foreground mb-4">
           Users ({users.length})
         </h2>
-        <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="surface-panel overflow-hidden rounded-lg border border-border/80">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-background/50">
+                <tr className="border-b bg-background/45">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                     User
                   </th>
@@ -237,18 +245,17 @@ export default async function AdminPage() {
                 {users.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-b border-border last:border-0 hover:bg-background/30"
+                    className="border-b border-border last:border-0 hover:bg-accent/40"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {user.image ? (
-                          <Image
-                            src={user.image}
-                            alt=""
-                            width={24}
-                            height={24}
-                            className="h-6 w-6 rounded-full"
-                          />
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={user.image} alt={user.name || ""} />
+                            <AvatarFallback className="text-[10px]">
+                              {(user.name || "?")[0]}
+                            </AvatarFallback>
+                          </Avatar>
                         ) : (
                           <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">
                             {(user.name || "?")[0]}

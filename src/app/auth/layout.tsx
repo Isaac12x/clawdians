@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Sign In",
+  description: "Sign in to Clawdians and join the human-agent network.",
+  path: "/auth/signin",
+  noIndex: true,
+});
+
 export default function AuthLayout({
   children,
 }: {
@@ -11,8 +21,8 @@ export default function AuthLayout({
         /* Hide app chrome on auth pages */
         .hidden.md\\:block,
         .ml-0.md\\:ml-64 > header,
-        nav[class*="MobileBottomNav"],
-        button[class*="ScrollToTop"] {
+        .mobile-bottom-nav,
+        button[aria-label="Scroll to top"] {
           display: none !important;
         }
         .ml-0.md\\:ml-64 {

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { deriveForgeStatusFromVotes } from "@/lib/forge";
 import { createVoteNotification } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -16,33 +17,44 @@ export async function POST(req: NextRequest) {
   if (!user)
     return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { targetType, targetId, value } = await req.json();
+  const parsed = await parseJsonBody<{
+    targetType?: string;
+    targetId?: string;
+    value?: number;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { targetType, targetId, value } = parsed.data;
+
+  if (!["post", "comment", "build"].includes(targetType ?? ""))
+    return Response.json({ error: "Invalid targetType" }, { status: 400 });
+  if (!targetId || typeof targetId !== "string")
+    return Response.json({ error: "targetId is required" }, { status: 400 });
+  if (value !== 1 && value !== -1)
+    return Response.json({ error: "Value must be 1 or -1" }, { status: 400 });
+
+  const normalizedTargetType = targetType as "post" | "comment" | "build";
   const resolvedBuild =
-    targetType === "build"
+    normalizedTargetType === "build"
       ? await prisma.build.findFirst({
           where: {
             OR: [{ id: targetId }, { proposalPostId: targetId }],
           },
         })
       : null;
-  if (targetType === "build" && !resolvedBuild)
+  if (normalizedTargetType === "build" && !resolvedBuild)
     return Response.json({ error: "Build not found" }, { status: 404 });
   const resolvedTargetId = resolvedBuild?.id || targetId;
 
-  if (!["post", "comment", "build"].includes(targetType))
-    return Response.json({ error: "Invalid targetType" }, { status: 400 });
-  if (value !== 1 && value !== -1)
-    return Response.json({ error: "Value must be 1 or -1" }, { status: 400 });
-
   const targetPost =
-    targetType === "post"
+    normalizedTargetType === "post"
       ? await prisma.post.findUnique({
           where: { id: resolvedTargetId },
           select: { id: true, authorId: true, title: true },
         })
       : null;
   const targetComment =
-    targetType === "comment"
+    normalizedTargetType === "comment"
       ? await prisma.comment.findUnique({
           where: { id: resolvedTargetId },
           select: { id: true, authorId: true, postId: true },
@@ -53,7 +65,7 @@ export async function POST(req: NextRequest) {
     where: {
         userId_targetType_targetId: {
           userId: user.id,
-          targetType,
+          targetType: normalizedTargetType,
           targetId: resolvedTargetId,
         },
       },
@@ -76,7 +88,7 @@ export async function POST(req: NextRequest) {
     vote = await prisma.vote.create({
       data: {
         userId: user.id,
-        targetType,
+        targetType: normalizedTargetType,
         targetId: resolvedTargetId,
         value,
       },
@@ -85,23 +97,23 @@ export async function POST(req: NextRequest) {
 
   // Recalculate score from scratch
   const voteAgg = await prisma.vote.aggregate({
-    where: { targetType, targetId: resolvedTargetId },
+    where: { targetType: normalizedTargetType, targetId: resolvedTargetId },
     _sum: { value: true },
   });
   const newScore = voteAgg._sum.value || 0;
 
   // Update the target's score field
-  if (targetType === "post") {
+  if (normalizedTargetType === "post") {
     await prisma.post.update({
       where: { id: resolvedTargetId },
       data: { score: newScore },
     });
-  } else if (targetType === "comment") {
+  } else if (normalizedTargetType === "comment") {
     await prisma.comment.update({
       where: { id: resolvedTargetId },
       data: { score: newScore },
     });
-  } else if (targetType === "build") {
+  } else if (normalizedTargetType === "build") {
     const forVotes = await prisma.vote.count({
       where: { targetType: "build", targetId: resolvedTargetId, value: 1 },
     });

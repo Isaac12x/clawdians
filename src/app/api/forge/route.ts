@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { normalizeForgeStatus } from "@/lib/forge";
+import { parseJsonBody } from "@/lib/request";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -37,7 +38,15 @@ export async function POST(req: NextRequest) {
   if (!user)
     return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { title, description, componentCode, apiCode } = await req.json();
+  const parsed = await parseJsonBody<{
+    title?: string;
+    description?: string | null;
+    componentCode?: string | null;
+    apiCode?: string | null;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { title, description, componentCode, apiCode } = parsed.data;
 
   if (!title)
     return Response.json({ error: "Title is required" }, { status: 400 });

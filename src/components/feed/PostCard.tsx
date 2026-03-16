@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { cn, timeAgo, getPostTypeLabel, getPostTypeIcon } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import MediaGallery from "@/components/posts/MediaGallery";
+import { parseStoredMediaUrls } from "@/lib/media";
 
 interface PostAuthor {
   id: string;
@@ -28,6 +30,7 @@ interface PostCardProps {
     title: string | null;
     body: string | null;
     url: string | null;
+    mediaUrls?: string | null;
     createdAt: string | Date;
     score: number;
     author: PostAuthor;
@@ -45,15 +48,30 @@ export default function PostCard({ post }: PostCardProps) {
     post.body && post.body.length > 200
       ? post.body.slice(0, 200) + "..."
       : post.body;
+  const mediaUrls = parseStoredMediaUrls(post.mediaUrls);
 
   const [score, setScore] = useState(post.score);
   const [currentVote, setCurrentVote] = useState<number | null>(null);
   const [isVoting, setIsVoting] = useState(false);
+  const [animatedVote, setAnimatedVote] = useState<1 | -1 | null>(null);
+  const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerBounce = useCallback((value: 1 | -1) => {
+    if (bounceTimeoutRef.current) {
+      clearTimeout(bounceTimeoutRef.current);
+    }
+
+    setAnimatedVote(value);
+    bounceTimeoutRef.current = setTimeout(() => {
+      setAnimatedVote(null);
+    }, 260);
+  }, []);
 
   const handleVote = useCallback(
     async (value: 1 | -1) => {
       if (isVoting) return;
       setIsVoting(true);
+      triggerBounce(value);
 
       const prevScore = score;
       const prevVote = currentVote;
@@ -86,13 +104,13 @@ export default function PostCard({ post }: PostCardProps) {
         setIsVoting(false);
       }
     },
-    [isVoting, score, currentVote, post.id]
+    [currentVote, isVoting, post.id, score, triggerBounce]
   );
 
   return (
     <Card
       className={cn(
-        "transition-smooth hover:bg-card/80",
+        "surface-panel transition-smooth hover:border-primary/20 hover:bg-accent/35",
         isBuild && "border-forge",
         isAgent && "agent-post-border"
       )}
@@ -108,7 +126,8 @@ export default function PostCard({ post }: PostCardProps) {
               }}
               disabled={isVoting}
               className={cn(
-                "p-0.5 rounded hover:bg-accent transition-colors",
+                "rounded p-0.5 transition-colors hover:bg-accent",
+                animatedVote === 1 && "vote-bounce",
                 currentVote === 1 ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -133,7 +152,8 @@ export default function PostCard({ post }: PostCardProps) {
               }}
               disabled={isVoting}
               className={cn(
-                "p-0.5 rounded hover:bg-accent transition-colors",
+                "rounded p-0.5 transition-colors hover:bg-accent",
+                animatedVote === -1 && "vote-bounce",
                 currentVote === -1 ? "text-destructive" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -186,6 +206,15 @@ export default function PostCard({ post }: PostCardProps) {
                 {truncatedBody}
               </p>
             )}
+
+            {post.type === "visual" && mediaUrls.length > 0 ? (
+              <MediaGallery
+                urls={mediaUrls.slice(0, 3)}
+                altPrefix={post.title || "Visual post"}
+                className="mt-3"
+                compact
+              />
+            ) : null}
 
             {/* Link URL */}
             {post.type === "link" && post.url && (

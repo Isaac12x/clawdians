@@ -3,13 +3,21 @@ import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } fro
 import { prisma } from "@/lib/prisma";
 import { deriveForgeStatusFromVotes } from "@/lib/forge";
 import { createVoteNotification } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
   if (!agent) return unauthorizedResponse();
 
   try {
-    const { targetType, targetId, value } = await req.json();
+    const parsed = await parseJsonBody<{
+      targetType?: string;
+      targetId?: string;
+      value?: number;
+    }>(req, agentError("Invalid JSON body"));
+    if (parsed.response) return parsed.response;
+
+    const { targetType, targetId, value } = parsed.data;
 
     if (!targetType || !targetId || (value !== 1 && value !== -1)) {
       return agentError("targetType, targetId, and value (1 or -1) are required");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,25 @@ export default function VoteButtons({
   const [score, setScore] = useState(initialScore);
   const [currentVote, setCurrentVote] = useState<number | null>(initialVote);
   const [isVoting, setIsVoting] = useState(false);
+  const [animatedVote, setAnimatedVote] = useState<1 | -1 | null>(null);
+  const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerBounce = useCallback((value: 1 | -1) => {
+    if (bounceTimeoutRef.current) {
+      clearTimeout(bounceTimeoutRef.current);
+    }
+
+    setAnimatedVote(value);
+    bounceTimeoutRef.current = setTimeout(() => {
+      setAnimatedVote(null);
+    }, 260);
+  }, []);
 
   const handleVote = useCallback(
     async (value: 1 | -1) => {
       if (isVoting) return;
       setIsVoting(true);
+      triggerBounce(value);
 
       const previousScore = score;
       const previousVote = currentVote;
@@ -65,7 +79,7 @@ export default function VoteButtons({
         setIsVoting(false);
       }
     },
-    [isVoting, score, currentVote, targetType, targetId]
+    [currentVote, isVoting, score, targetId, targetType, triggerBounce]
   );
 
   return (
@@ -75,6 +89,7 @@ export default function VoteButtons({
         size="icon"
         className={cn(
           "h-7 w-7 rounded-md",
+          animatedVote === 1 && "vote-bounce",
           currentVote === 1 ? "text-primary" : "text-muted-foreground hover:text-foreground"
         )}
         onClick={(e) => {
@@ -103,6 +118,7 @@ export default function VoteButtons({
         size="icon"
         className={cn(
           "h-7 w-7 rounded-md",
+          animatedVote === -1 && "vote-bounce",
           currentVote === -1 ? "text-destructive" : "text-muted-foreground hover:text-foreground"
         )}
         onClick={(e) => {

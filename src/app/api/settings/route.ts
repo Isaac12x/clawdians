@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/request";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -42,8 +43,18 @@ export async function PATCH(req: Request) {
   if (!user)
     return Response.json({ error: "User not found" }, { status: 404 });
 
+  const parsed = await parseJsonBody<{
+    name?: string;
+    bio?: string | null;
+    notifyReplies?: boolean;
+    notifyMentions?: boolean;
+    notifyVotes?: boolean;
+    notifyFollowers?: boolean;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
   const { name, bio, notifyReplies, notifyMentions, notifyVotes, notifyFollowers } =
-    await req.json();
+    parsed.data;
 
   const updated = await prisma.user.update({
     where: { id: user.id },

@@ -42,6 +42,52 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
 }
 
+.surface-panel {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-card) 96%, transparent) 0%,
+      color-mix(in srgb, var(--color-card) 88%, transparent) 100%
+    );
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 80px -56px rgba(2, 6, 23, 0.9);
+}
+
+.surface-panel-muted {
+  background: color-mix(in srgb, var(--color-background) 76%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.surface-hero {
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--color-primary) 18%, transparent) 0%,
+      transparent 40%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-card) 96%, transparent) 0%,
+      color-mix(in srgb, var(--color-background) 92%, transparent) 100%
+    );
+  backdrop-filter: blur(22px);
+}
+
+.surface-forge {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(245, 158, 11, 0.08) 0%,
+      color-mix(in srgb, var(--color-background) 90%, transparent) 100%
+    );
+  backdrop-filter: blur(20px);
+}
+
+.surface-popover {
+  background: color-mix(in srgb, var(--color-popover) 94%, transparent);
+  backdrop-filter: blur(18px);
+}
+
 ::selection {
   background: rgba(79, 141, 245, 0.28);
   color: var(--color-foreground);
@@ -58,6 +104,15 @@ select {
     border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:where(a, button, [role="button"], summary):focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 /* Scrollbar styling */
@@ -145,21 +200,25 @@ select {
   text-underline-offset: 2px;
 }
 .markdown-content code {
-  background: var(--color-secondary);
+  background: color-mix(in srgb, var(--color-accent) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
   padding: 0.15em 0.4em;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 .markdown-content pre {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-muted) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
   border-radius: 0.5rem;
   padding: 1em;
   overflow-x: auto;
   margin: 0.75em 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
 }
 .markdown-content pre code {
   background: transparent;
+  border: 0;
   padding: 0;
   font-size: 0.85em;
 }
@@ -214,8 +273,8 @@ select {
     border-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .card-hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 60px -40px rgba(79, 141, 245, 0.55);
+  transform: translateY(-4px);
+  box-shadow: 0 26px 70px -42px rgba(79, 141, 245, 0.48);
 }
 
 /* Agent badge shimmer */
@@ -249,8 +308,24 @@ select {
   }
 }
 
-.page-shell > * {
-  animation: page-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+.page-transition {
+  animation: page-fade-in 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-transition > * {
+  animation: page-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-transition > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.page-transition > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.page-transition > *:nth-child(4) {
+  animation-delay: 120ms;
 }
 
 @keyframes skeleton-shimmer {
@@ -272,6 +347,62 @@ select {
     );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+@keyframes vote-bounce {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.vote-bounce {
+  animation: vote-bounce 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bell-shake {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(12deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(8deg);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+}
+
+.bell-shake {
+  animation: bell-shake 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top center;
+}
+
+.thread-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.thread-collapse[data-collapsed="true"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.thread-collapse > div {
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

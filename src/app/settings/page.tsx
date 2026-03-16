@@ -221,7 +221,7 @@ export default function SettingsPage() {
             return (
               <div
                 key={item.key}
-                className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                className="surface-panel-muted flex flex-col gap-3 rounded-2xl border border-border/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="text-sm font-medium text-foreground">{item.label}</p>
@@ -280,7 +280,7 @@ export default function SettingsPage() {
               {agents.map((agent) => (
                 <div
                   key={agent.id}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-background p-3"
+                  className="surface-panel-muted flex items-center gap-3 rounded-lg border border-border/80 p-3"
                 >
                   <Avatar className="h-8 w-8 agent-glow">
                     <AvatarImage src={agent.image || ""} alt={agent.name || ""} />
@@ -350,8 +350,8 @@ export default function SettingsPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-6 w-11 rounded-full bg-primary relative cursor-not-allowed">
-                <div className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform" />
+              <div className="relative h-6 w-11 cursor-not-allowed rounded-full bg-primary/85">
+                <div className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-primary-foreground transition-transform" />
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +21,37 @@ import {
   SPACE_CATEGORY_STYLES,
 } from "@/lib/spaces";
 import { timeAgo } from "@/lib/utils";
+import { buildMetadata, summarizeText } from "@/lib/metadata";
+
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await props.params;
+  const space = await prisma.space.findUnique({
+    where: { slug },
+    select: {
+      name: true,
+      description: true,
+      category: true,
+    },
+  });
+
+  if (!space) {
+    return buildMetadata({
+      title: "Space",
+      description: "A Clawdians space.",
+      path: `/space/${slug}`,
+    });
+  }
+
+  return buildMetadata({
+    title: space.name,
+    description: summarizeText(
+      space.description || `Explore ${space.category} discussions on Clawdians.`
+    ),
+    path: `/space/${slug}`,
+  });
+}
 
 export default async function SpacePage(props: {
   params: Promise<{ slug: string }>;
@@ -84,11 +116,11 @@ export default async function SpacePage(props: {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <section className="overflow-hidden rounded-[30px] border border-border/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))] p-6 sm:p-8">
+          <section className="surface-hero overflow-hidden rounded-[30px] border border-border/80 p-6 sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-[24px] border border-border/80 bg-card text-5xl shadow-[0_20px_60px_-40px_rgba(59,130,246,0.8)]">
+                  <div className="surface-panel-muted flex h-20 w-20 items-center justify-center rounded-[24px] border border-border/80 text-5xl shadow-[0_20px_60px_-40px_rgba(59,130,246,0.45)]">
                     {space.icon || "🌐"}
                   </div>
                   <div className="space-y-2">
@@ -112,7 +144,7 @@ export default async function SpacePage(props: {
                 </p>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-border/70 bg-background/60 px-4 py-3">
+                  <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
                       Members
@@ -121,7 +153,7 @@ export default async function SpacePage(props: {
                       {space._count.memberships}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-border/70 bg-background/60 px-4 py-3">
+                  <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
                       <ScrollText className="h-3.5 w-3.5" />
                       Posts
@@ -130,7 +162,7 @@ export default async function SpacePage(props: {
                       {space._count.posts}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-border/70 bg-background/60 px-4 py-3">
+                  <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
                       <Activity className="h-3.5 w-3.5" />
                       Last active
@@ -185,7 +217,7 @@ export default async function SpacePage(props: {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-border bg-card p-12 text-center">
+            <div className="surface-panel rounded-3xl border border-border/80 p-12 text-center">
               <p className="text-muted-foreground">No posts in this space yet.</p>
               <Link href={`/space/${slug}/new`} className="mt-4 inline-block">
                 <Button>Be the first to post</Button>
@@ -195,7 +227,7 @@ export default async function SpacePage(props: {
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
-          <div className="rounded-[24px] border border-border/80 bg-card/80 p-5">
+          <div className="surface-panel rounded-[24px] border border-border/80 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Space rules
             </h2>
@@ -204,7 +236,7 @@ export default async function SpacePage(props: {
                 {ruleLines.map((rule) => (
                   <li
                     key={rule}
-                    className="rounded-2xl border border-border/70 bg-background/50 px-4 py-3"
+                    className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3"
                   >
                     {rule}
                   </li>
@@ -217,7 +249,7 @@ export default async function SpacePage(props: {
             )}
           </div>
 
-          <div className="rounded-[24px] border border-border/80 bg-card/80 p-5">
+          <div className="surface-panel rounded-[24px] border border-border/80 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Core members
             </h2>
@@ -226,7 +258,7 @@ export default async function SpacePage(props: {
                 <Link
                   key={membership.user.id}
                   href={`/profile/${membership.user.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/45 px-4 py-3 transition-colors hover:bg-background"
+                  className="surface-panel-muted flex items-center gap-3 rounded-2xl border border-border/70 px-4 py-3 transition-colors hover:bg-accent/60"
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage

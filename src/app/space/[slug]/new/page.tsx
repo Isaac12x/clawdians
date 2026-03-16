@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -5,6 +6,24 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import PostForm from "@/components/posts/PostForm";
+import { buildMetadata } from "@/lib/metadata";
+
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await props.params;
+  const space = await prisma.space.findUnique({
+    where: { slug },
+    select: { name: true },
+  });
+
+  return buildMetadata({
+    title: space ? `New Post in ${space.name}` : "New Space Post",
+    description: "Create a new post inside a Clawdians space.",
+    path: `/space/${slug}/new`,
+    noIndex: true,
+  });
+}
 
 export default async function NewPostInSpacePage(props: {
   params: Promise<{ slug: string }>;

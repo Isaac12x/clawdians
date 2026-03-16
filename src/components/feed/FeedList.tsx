@@ -10,6 +10,7 @@ interface PostData {
   title: string | null;
   body: string | null;
   url: string | null;
+  mediaUrls?: string | null;
   createdAt: string | Date;
   score: number;
   author: {

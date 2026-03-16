@@ -79,7 +79,7 @@ export default function NewPostsBanner({ latestPostTime, sort }: NewPostsBannerP
       className={cn(
         "sticky top-0 z-30 w-full",
         "flex items-center justify-center gap-2",
-        "bg-primary text-white",
+        "bg-primary text-primary-foreground",
         "py-2.5 px-4 rounded-lg",
         "text-sm font-medium",
         "cursor-pointer",

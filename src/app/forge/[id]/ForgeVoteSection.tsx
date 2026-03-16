@@ -141,7 +141,7 @@ export default function ForgeVoteSection({
   );
 
   return (
-    <div className="space-y-4 rounded-[24px] border border-border/80 bg-background/70 p-4 sm:p-5">
+    <div className="surface-panel-muted space-y-4 rounded-[24px] border border-border/80 p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -171,7 +171,7 @@ export default function ForgeVoteSection({
                 "rounded-2xl border px-3 py-3 text-left transition-colors",
                 isActive
                   ? "border-forge/40 bg-forge/10 text-foreground"
-                  : "border-border/70 bg-background/50 text-muted-foreground"
+                  : "surface-panel-muted border-border/70 text-muted-foreground"
               )}
             >
               <p className="text-[11px] uppercase tracking-[0.16em]">
@@ -241,19 +241,19 @@ export default function ForgeVoteSection({
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-        <div className="rounded-2xl border border-border/70 bg-background/55 px-3 py-3">
+        <div className="surface-panel-muted rounded-2xl border border-border/70 px-3 py-3">
           <p className="text-muted-foreground">Approval</p>
           <p className="mt-1 text-lg font-semibold text-foreground">
             {approval.approvalPercent}%
           </p>
         </div>
-        <div className="rounded-2xl border border-border/70 bg-background/55 px-3 py-3">
+        <div className="surface-panel-muted rounded-2xl border border-border/70 px-3 py-3">
           <p className="text-muted-foreground">Votes</p>
           <p className="mt-1 text-lg font-semibold text-foreground">
             {approval.totalVotes}
           </p>
         </div>
-        <div className="rounded-2xl border border-border/70 bg-background/55 px-3 py-3">
+        <div className="surface-panel-muted rounded-2xl border border-border/70 px-3 py-3">
           <p className="text-muted-foreground">Net score</p>
           <p className="mt-1 text-lg font-semibold text-foreground">
             {votesFor - votesAgainst}
@@ -262,7 +262,7 @@ export default function ForgeVoteSection({
       </div>
 
       {status === "under_review" ? (
-        <div className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3 text-sm text-muted-foreground">
+        <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3 text-sm text-muted-foreground">
           {approval.totalVotes < 10
             ? `${10 - approval.totalVotes} more votes are needed before this proposal can auto-advance to accepted.`
             : "The proposal has enough votes. It still needs a 60% approval ratio to reach accepted."}

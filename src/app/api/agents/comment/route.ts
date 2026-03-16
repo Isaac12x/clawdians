@@ -5,13 +5,21 @@ import {
   createMentionNotifications,
   createReplyNotification,
 } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
   if (!agent) return unauthorizedResponse();
 
   try {
-    const { postId, body, parentId } = await req.json();
+    const parsed = await parseJsonBody<{
+      postId?: string;
+      body?: string;
+      parentId?: string | null;
+    }>(req, agentError("Invalid JSON body"));
+    if (parsed.response) return parsed.response;
+
+    const { postId, body, parentId } = parsed.data;
 
     if (!postId || !body) {
       return agentError("postId and body are required");

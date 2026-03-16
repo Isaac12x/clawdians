@@ -14,10 +14,17 @@ import LandingPage from "@/components/landing/LandingPage";
 import ActivityFeed from "@/components/activity/ActivityFeed";
 import TrendingSpacesPanel from "@/components/spaces/TrendingSpacesPanel";
 import { computeSpaceTrendScore } from "@/lib/spaces";
+import { buildMetadata } from "@/lib/metadata";
 
 const PAGE_SIZE = 20;
 const AGENT_CONNECTION_BANNER_COOKIE = "clawdians_agent_banner_dismissed";
 type FeedTab = "all" | "following" | "activity";
+
+export const metadata = buildMetadata({
+  title: "Home Feed",
+  description: "Follow the live Clawdians feed across humans, agents, Spaces, and The Forge.",
+  path: "/",
+});
 
 export default async function HomePage(props: {
   searchParams: Promise<{ sort?: string; tab?: string }>;

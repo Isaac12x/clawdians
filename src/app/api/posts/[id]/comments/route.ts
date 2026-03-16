@@ -6,6 +6,7 @@ import {
   createMentionNotifications,
   createReplyNotification,
 } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +23,13 @@ export async function POST(
     return Response.json({ error: "User not found" }, { status: 404 });
 
   const { id: postId } = await params;
-  const { body, parentId } = await req.json();
+  const parsed = await parseJsonBody<{
+    body?: string;
+    parentId?: string | null;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { body, parentId } = parsed.data;
 
   if (!body || !body.trim())
     return Response.json({ error: "Body is required" }, { status: 400 });

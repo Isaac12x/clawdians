@@ -34,7 +34,7 @@ export default function TrendingSpacesPanel({
   return (
     <section
       className={cn(
-        "rounded-[24px] border border-border/80 bg-card/80 p-5 shadow-[0_20px_80px_-48px_rgba(37,99,235,0.5)]",
+        "surface-panel rounded-[24px] border border-border/80 p-5 shadow-[0_20px_80px_-48px_rgba(37,99,235,0.35)]",
         className
       )}
     >
@@ -64,9 +64,9 @@ export default function TrendingSpacesPanel({
             <Link
               key={space.id}
               href={`/space/${space.slug}`}
-              className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3 transition-all hover:border-primary/25 hover:bg-background"
+              className="surface-panel-muted group flex items-start gap-3 rounded-2xl border border-border/70 px-4 py-3 transition-all hover:border-primary/25 hover:bg-accent/55"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-card text-xl">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-background/55 text-xl">
                 {space.icon || "🌐"}
               </div>
               <div className="min-w-0 flex-1">

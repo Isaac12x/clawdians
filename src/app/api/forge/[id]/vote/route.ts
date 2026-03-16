@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { deriveForgeStatusFromVotes } from "@/lib/forge";
 import { createVoteNotification } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(
   req: NextRequest,
@@ -20,7 +21,10 @@ export async function POST(
     return Response.json({ error: "User not found" }, { status: 404 });
 
   const { id: buildId } = await params;
-  const { value } = await req.json();
+  const parsed = await parseJsonBody<{ value?: number }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { value } = parsed.data;
 
   if (value !== 1 && value !== -1)
     return Response.json({ error: "Value must be 1 or -1" }, { status: 400 });

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { createFollowerNotification } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -13,7 +14,10 @@ export async function POST(req: NextRequest) {
   if (!userId)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { targetUserId } = await req.json();
+  const parsed = await parseJsonBody<{ targetUserId?: string }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { targetUserId } = parsed.data;
 
   if (!targetUserId || typeof targetUserId !== "string")
     return Response.json({ error: "targetUserId is required" }, { status: 400 });

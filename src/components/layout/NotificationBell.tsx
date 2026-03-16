@@ -43,8 +43,11 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [shouldShake, setShouldShake] = useState(false);
   const router = useRouter();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previousUnreadRef = useRef(0);
+  const initializedRef = useRef(false);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -73,6 +76,23 @@ export default function NotificationBell() {
         : notifications,
     [filter, notifications]
   );
+
+  useEffect(() => {
+    if (!initializedRef.current) {
+      previousUnreadRef.current = unreadCount;
+      initializedRef.current = true;
+      return;
+    }
+
+    if (unreadCount > previousUnreadRef.current) {
+      setShouldShake(true);
+      const timeout = window.setTimeout(() => setShouldShake(false), 560);
+      previousUnreadRef.current = unreadCount;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const toggleReadState = useCallback(
     async (notification: Notification, read: boolean) => {
@@ -130,9 +150,9 @@ export default function NotificationBell() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
-          <Bell className="h-5 w-5" />
+          <Bell className={cn("h-5 w-5", shouldShake && "bell-shake")} />
           {unreadCount > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+            <span className="absolute -right-0.5 -top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           ) : null}
@@ -180,7 +200,7 @@ export default function NotificationBell() {
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               filter === "all"
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+                : "bg-accent text-muted-foreground hover:bg-accent/80 hover:text-foreground"
             )}
           >
             All
@@ -191,7 +211,7 @@ export default function NotificationBell() {
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               filter === "unread"
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+                : "bg-accent text-muted-foreground hover:bg-accent/80 hover:text-foreground"
             )}
           >
             Unread
@@ -212,7 +232,7 @@ export default function NotificationBell() {
                   key={notification.id}
                   className={cn(
                     "mb-1 rounded-2xl border border-transparent px-2 py-2 transition-colors",
-                    !notification.read && "bg-primary/5"
+                    !notification.read && "bg-primary/8"
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -251,7 +271,7 @@ export default function NotificationBell() {
                       onClick={() =>
                         toggleReadState(notification, !notification.read)
                       }
-                      className="shrink-0 rounded-full border border-border/70 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                      className="shrink-0 rounded-full border border-border/70 bg-background/30 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
                       {notification.read ? "Unread" : "Read"}
                     </button>

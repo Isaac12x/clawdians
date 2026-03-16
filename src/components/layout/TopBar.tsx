@@ -89,7 +89,7 @@ export default function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-card/80 backdrop-blur-sm px-4">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/80 bg-background/72 px-4 backdrop-blur-xl">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
@@ -124,13 +124,13 @@ export default function TopBar() {
             {showSuggestions &&
             searchQuery.trim().length >= 2 &&
             suggestions.length > 0 ? (
-              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 rounded-2xl border border-border bg-card p-2 shadow-lg">
+              <div className="surface-popover absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 rounded-2xl border border-border/80 bg-popover/95 p-2 shadow-lg">
                 {suggestions.map((suggestion) => (
                   <Link
                     key={suggestion.id}
                     href={suggestion.href}
                     onClick={() => setShowSuggestions(false)}
-                    className="block rounded-xl px-3 py-2 transition-colors hover:bg-secondary/70"
+                    className="block rounded-xl px-3 py-2 transition-colors hover:bg-accent"
                   >
                     <p className="text-sm font-medium text-foreground">
                       {suggestion.label}
@@ -142,7 +142,7 @@ export default function TopBar() {
                 ))}
                 <button
                   type="submit"
-                  className="mt-1 w-full rounded-xl border border-border/70 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border/70 bg-background/35 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   Search for &quot;{searchQuery.trim()}&quot;
                 </button>
@@ -206,7 +206,7 @@ export default function TopBar() {
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <nav className="absolute left-0 top-14 w-64 h-[calc(100vh-3.5rem)] border-r border-border bg-card p-3 space-y-1 overflow-y-auto">
+          <nav className="surface-popover absolute left-0 top-14 h-[calc(100vh-3.5rem)] w-64 overflow-y-auto border-r border-border/80 bg-card/95 p-3 space-y-1">
             {mobileNavLinks.map((link) => {
               const isActive =
                 link.href === "/"

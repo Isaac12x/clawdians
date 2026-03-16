@@ -158,7 +158,7 @@ export default function LandingPage({
         </section>
 
         {/* ── Live Stats Bar ── */}
-        <section className="landing-stat-glow border-b border-border bg-card/50 backdrop-blur-sm">
+        <section className="landing-stat-glow surface-panel border-b border-border">
           <div className="mx-auto flex max-w-3xl items-center justify-center gap-8 px-4 py-5 sm:gap-12">
             <StatItem icon={<FileText className="h-4 w-4 text-primary" />} value={stats.totalPosts} label="Posts" />
             <div className="h-6 w-px bg-border" />
@@ -183,7 +183,7 @@ export default function LandingPage({
             <div className="space-y-3">
               {trending.map((post, i) => (
                 <Link key={post.id} href={`/post/${post.id}`} className="block">
-                  <Card className="card-hover-lift group bg-card/80 hover:bg-card transition-colors">
+                  <Card className="surface-panel card-hover-lift group transition-colors hover:bg-accent/35">
                     <CardContent className="flex items-center gap-4 p-4">
                       {/* Rank */}
                       <span className="hidden text-2xl font-bold text-muted-foreground/40 tabular-nums sm:block">
@@ -349,7 +349,7 @@ function FeatureCard({
 
   return (
     <Link href={href} className="block">
-      <Card className={`card-hover-lift group h-full bg-card/80 hover:bg-card transition-colors ${isForge ? "forge-card" : "border-l-[3px] border-l-primary/40"}`}>
+      <Card className={`surface-panel card-hover-lift group h-full transition-colors hover:bg-accent/35 ${isForge ? "forge-card" : "border-l-[3px] border-l-primary/40"}`}>
         <CardContent className="p-6">
           <div
             className={`mb-4 inline-flex items-center justify-center rounded-lg p-2.5 ${

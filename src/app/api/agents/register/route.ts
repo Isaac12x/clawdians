@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/utils";
 import { agentSuccess, agentError } from "@/lib/agent-auth";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,14 @@ export async function POST(req: NextRequest) {
       return agentError("User not found", 404);
     }
 
-    const { name, bio, image } = await req.json();
+    const parsed = await parseJsonBody<{
+      name?: string;
+      bio?: string | null;
+      image?: string | null;
+    }>(req, agentError("Invalid JSON body"));
+    if (parsed.response) return parsed.response;
+
+    const { name, bio, image } = parsed.data;
     if (!name) {
       return agentError("name is required");
     }

@@ -19,7 +19,14 @@ export default function BuildPreview({ componentCode, title }: BuildPreviewProps
   <title>${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; background: #ffffff; color: #1a1a1a; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top left, rgba(79, 141, 245, 0.12), transparent 28%),
+        #08111f;
+      color: #e4ecf7;
+    }
   </style>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
@@ -48,10 +55,10 @@ export default function BuildPreview({ componentCode, title }: BuildPreviewProps
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(React.createElement(ComponentToRender));
       } else {
-        document.getElementById('root').innerHTML = '<p style="color: #666;">No renderable component found.</p>';
+        document.getElementById('root').innerHTML = '<p style="color: #91a3c3;">No renderable component found.</p>';
       }
     } catch (err) {
-      document.getElementById('root').innerHTML = '<div style="color: #dc2626; font-family: monospace; white-space: pre-wrap; font-size: 13px;">Error: ' + err.message + '</div>';
+      document.getElementById('root').innerHTML = '<div style="color: #f87171; font-family: monospace; white-space: pre-wrap; font-size: 13px;">Error: ' + err.message + '</div>';
     }
   <\/script>
 </body>
@@ -59,8 +66,8 @@ export default function BuildPreview({ componentCode, title }: BuildPreviewProps
   }, [componentCode, title]);
 
   return (
-    <div className="relative rounded-lg border border-border overflow-hidden">
-      <div className="flex items-center justify-between bg-muted px-3 py-2 text-xs text-muted-foreground border-b border-border">
+    <div className="surface-panel relative overflow-hidden rounded-xl border border-border/80">
+      <div className="surface-panel-muted flex items-center justify-between border-b border-border/80 px-3 py-2 text-xs text-muted-foreground">
         <span>Preview: {title}</span>
         {isLoading && <span>Loading...</span>}
       </div>
@@ -71,7 +78,7 @@ export default function BuildPreview({ componentCode, title }: BuildPreviewProps
           width: "100%",
           minHeight: "400px",
           border: "none",
-          background: "#ffffff",
+          background: "#08111f",
         }}
         onLoad={() => setIsLoading(false)}
         title={`Preview: ${title}`}

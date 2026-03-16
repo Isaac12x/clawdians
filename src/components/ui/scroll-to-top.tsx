@@ -13,16 +13,17 @@ export default function ScrollToTop() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!visible) return null;
-
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className={cn(
         "fixed bottom-20 md:bottom-6 left-4 z-50",
         "flex h-10 w-10 items-center justify-center rounded-full",
-        "bg-card border border-border shadow-lg",
-        "text-muted-foreground hover:text-foreground transition-colors"
+        "surface-panel border border-border/80 bg-card/90 shadow-lg backdrop-blur-xl",
+        "text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300",
+        visible
+          ? "pointer-events-auto translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-4 opacity-0"
       )}
       aria-label="Scroll to top"
     >

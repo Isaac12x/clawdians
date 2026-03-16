@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { MessageSquare, ChevronUp, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
@@ -77,13 +77,27 @@ function CommentItem({
   const [voteState, setVoteState] = useState<number | null>(null);
   const [score, setScore] = useState(comment.score);
   const [collapsed, setCollapsed] = useState(false);
+  const [animatedVote, setAnimatedVote] = useState<1 | -1 | null>(null);
+  const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isAgent = comment.author.type === "agent";
   const hasChildren = comment.children.length > 0;
   const canNest = depth < MAX_DEPTH;
 
+  const triggerBounce = useCallback((value: 1 | -1) => {
+    if (bounceTimeoutRef.current) {
+      clearTimeout(bounceTimeoutRef.current);
+    }
+
+    setAnimatedVote(value);
+    bounceTimeoutRef.current = setTimeout(() => {
+      setAnimatedVote(null);
+    }, 260);
+  }, []);
+
   const handleVote = useCallback(
     async (value: 1 | -1) => {
+      triggerBounce(value);
       const prevScore = score;
       const prevVote = voteState;
 
@@ -117,7 +131,7 @@ function CommentItem({
         setVoteState(prevVote);
       }
     },
-    [score, voteState, comment.id]
+    [comment.id, score, triggerBounce, voteState]
   );
 
   const handleSubmitReply = useCallback(async () => {
@@ -156,9 +170,9 @@ function CommentItem({
               aria-label={collapsed ? "Expand thread" : "Collapse thread"}
             >
               {collapsed ? (
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300" />
               ) : (
-                <Minus className="h-3.5 w-3.5" />
+                <Minus className="h-3.5 w-3.5 transition-transform duration-300" />
               )}
             </button>
           )}
@@ -189,8 +203,8 @@ function CommentItem({
           )}
         </div>
 
-        {!collapsed && (
-          <>
+        <div className="thread-collapse" data-collapsed={collapsed}>
+          <div>
             {/* Body */}
             <p className="text-sm text-foreground mb-2 leading-relaxed">
               {comment.body}
@@ -203,6 +217,7 @@ function CommentItem({
                   onClick={() => handleVote(1)}
                   className={cn(
                     "p-0.5 rounded hover:bg-accent transition-colors",
+                    animatedVote === 1 && "vote-bounce",
                     voteState === 1 ? "text-primary" : "text-muted-foreground"
                   )}
                 >
@@ -224,6 +239,7 @@ function CommentItem({
                   onClick={() => handleVote(-1)}
                   className={cn(
                     "p-0.5 rounded hover:bg-accent transition-colors",
+                    animatedVote === -1 && "vote-bounce",
                     voteState === -1 ? "text-destructive" : "text-muted-foreground"
                   )}
                 >
@@ -272,21 +288,20 @@ function CommentItem({
                 </div>
               </div>
             )}
-          </>
-        )}
-      </div>
 
-      {/* Children */}
-      {!collapsed &&
-        comment.children.map((child) => (
-          <CommentItem
-            key={child.id}
-            comment={child}
-            postId={postId}
-            depth={canNest ? depth + 1 : depth}
-            onReplyAdded={onReplyAdded}
-          />
-        ))}
+            {/* Children */}
+            {comment.children.map((child) => (
+              <CommentItem
+                key={child.id}
+                comment={child}
+                postId={postId}
+                depth={canNest ? depth + 1 : depth}
+                onReplyAdded={onReplyAdded}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

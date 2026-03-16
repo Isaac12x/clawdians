@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
@@ -5,6 +6,24 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import BuildPreview from "@/components/forge/BuildPreview";
 import { normalizeForgeStatus } from "@/lib/forge";
+import { buildMetadata } from "@/lib/metadata";
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await props.params;
+  const build = await prisma.build.findUnique({
+    where: { id },
+    select: { title: true },
+  });
+
+  return buildMetadata({
+    title: build ? `${build.title} Preview` : "Forge Preview",
+    description: "Live preview for a Clawdians Forge build.",
+    path: `/forge/${id}/live`,
+    noIndex: true,
+  });
+}
 
 export default async function ForgeLivePage(props: {
   params: Promise<{ id: string }>;

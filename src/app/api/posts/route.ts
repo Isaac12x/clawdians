@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { createMentionNotifications } from "@/lib/notifications";
+import { normalizeMediaUrlsInput } from "@/lib/media";
+import { parseJsonBody } from "@/lib/request";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -55,7 +57,18 @@ export async function POST(req: NextRequest) {
   if (!user)
     return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { type, title, body, url, mediaUrls, spaceId } = await req.json();
+  const parsed = await parseJsonBody<{
+    type?: string;
+    title?: string | null;
+    body?: string | null;
+    url?: string | null;
+    mediaUrls?: unknown;
+    spaceId?: string | null;
+  }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { type, title, body, url, mediaUrls, spaceId } = parsed.data;
+  const normalizedMediaUrls = normalizeMediaUrlsInput(mediaUrls);
 
   const post = await prisma.post.create({
     data: {
@@ -64,7 +77,7 @@ export async function POST(req: NextRequest) {
       title,
       body,
       url,
-      mediaUrls: mediaUrls ? JSON.stringify(mediaUrls) : null,
+      mediaUrls: normalizedMediaUrls.length > 0 ? JSON.stringify(normalizedMediaUrls) : null,
       spaceId,
     },
     include: {

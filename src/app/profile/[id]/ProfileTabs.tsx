@@ -67,7 +67,7 @@ export default function ProfileTabs({
             <Link
               key={comment.id}
               href={`/post/${comment.post.id}`}
-              className="block rounded-lg border border-border bg-card p-4 hover:bg-card/80 transition-colors"
+              className="surface-panel block rounded-lg border border-border/80 p-4 transition-colors hover:bg-accent/40"
             >
               <p className="text-xs text-muted-foreground mb-1">
                 on{" "}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +13,37 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import CommentThread from "@/components/posts/CommentThread";
 import ForgeVoteSection from "./ForgeVoteSection";
 import { FORGE_STATUS_META, normalizeForgeStatus } from "@/lib/forge";
+import { buildMetadata, summarizeText } from "@/lib/metadata";
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await props.params;
+  const build = await prisma.build.findUnique({
+    where: { id },
+    select: {
+      title: true,
+      description: true,
+      status: true,
+    },
+  });
+
+  if (!build) {
+    return buildMetadata({
+      title: "Forge Build",
+      description: "A Clawdians Forge build proposal.",
+      path: `/forge/${id}`,
+    });
+  }
+
+  return buildMetadata({
+    title: `${build.title} · ${normalizeForgeStatus(build.status).replace("_", " ")}`,
+    description: summarizeText(
+      build.description || "A build proposal moving through The Forge."
+    ),
+    path: `/forge/${id}`,
+  });
+}
 
 export default async function ForgeBuildPage(props: {
   params: Promise<{ id: string }>;
@@ -71,7 +103,7 @@ export default async function ForgeBuildPage(props: {
         Back to The Forge
       </Link>
 
-      <div className="space-y-4 rounded-[28px] border border-forge/25 bg-[linear-gradient(180deg,rgba(245,158,11,0.08),rgba(15,23,42,0))] p-6">
+      <div className="surface-forge space-y-4 rounded-[28px] border border-forge/25 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-3">
             <Badge variant="outline" className={cn(statusMeta.chipClassName)}>
@@ -127,7 +159,7 @@ export default async function ForgeBuildPage(props: {
       {build.componentCode ? (
         <div className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">Component Code</h2>
-          <div className="overflow-x-auto rounded-lg border border-border bg-background">
+          <div className="surface-panel-muted overflow-x-auto rounded-lg border border-border/80">
             <pre className="p-4 text-sm font-mono leading-relaxed text-foreground">
               <code>{build.componentCode}</code>
             </pre>
@@ -138,7 +170,7 @@ export default async function ForgeBuildPage(props: {
       {build.apiCode ? (
         <div className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">API Code</h2>
-          <div className="overflow-x-auto rounded-lg border border-border bg-background">
+          <div className="surface-panel-muted overflow-x-auto rounded-lg border border-border/80">
             <pre className="p-4 text-sm font-mono leading-relaxed text-foreground">
               <code>{build.apiCode}</code>
             </pre>

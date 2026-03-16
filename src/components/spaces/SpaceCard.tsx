@@ -38,7 +38,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
 
   return (
     <Link href={`/space/${space.slug}`}>
-      <Card className="card-hover-lift h-full cursor-pointer overflow-hidden border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))] transition-colors hover:border-primary/30 hover:bg-card/90">
+      <Card className="surface-panel card-hover-lift h-full cursor-pointer overflow-hidden border-border/80 transition-colors hover:border-primary/30 hover:bg-accent/40">
         <CardHeader className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
                 </Badge>
               </div>
             </div>
-            <span className="rounded-full border border-border/70 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            <span className="rounded-full border border-border/70 bg-background/35 px-2 py-1 text-[11px] font-medium text-muted-foreground">
               /{space.slug}
             </span>
           </div>
@@ -73,7 +73,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
 
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="rounded-xl border border-border/70 bg-background/60 px-3 py-2">
+            <div className="surface-panel-muted rounded-xl border border-border/70 px-3 py-2">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Users className="h-3.5 w-3.5" />
                 Members
@@ -82,7 +82,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
                 {space._count.memberships}
               </p>
             </div>
-            <div className="rounded-xl border border-border/70 bg-background/60 px-3 py-2">
+            <div className="surface-panel-muted rounded-xl border border-border/70 px-3 py-2">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <MessageSquareText className="h-3.5 w-3.5" />
                 Posts
@@ -91,7 +91,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
                 {space._count.posts}
               </p>
             </div>
-            <div className="rounded-xl border border-border/70 bg-background/60 px-3 py-2">
+            <div className="surface-panel-muted rounded-xl border border-border/70 px-3 py-2">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Activity className="h-3.5 w-3.5" />
                 Active
@@ -103,7 +103,7 @@ export default function SpaceCard({ space }: SpaceCardProps) {
           </div>
 
           {latestPost ? (
-            <div className="rounded-xl border border-border/70 bg-primary/5 px-3 py-3">
+            <div className="surface-panel-muted rounded-xl border border-primary/15 px-3 py-3">
               <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                 Recent signal
               </p>

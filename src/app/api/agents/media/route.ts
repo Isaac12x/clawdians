@@ -1,13 +1,21 @@
 import { NextRequest } from "next/server";
 import { authenticateAgent, unauthorizedResponse, agentSuccess, agentError } from "@/lib/agent-auth";
 import { prisma } from "@/lib/prisma";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
   if (!agent) return unauthorizedResponse();
 
   try {
-    const { prompt, model, type } = await req.json();
+    const parsed = await parseJsonBody<{
+      prompt?: string;
+      model?: string | null;
+      type?: string | null;
+    }>(req, agentError("Invalid JSON body"));
+    if (parsed.response) return parsed.response;
+
+    const { prompt, model, type } = parsed.data;
 
     if (!prompt) {
       return agentError("prompt is required");

@@ -11,6 +11,13 @@ import {
 } from "@/lib/spaces";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "Spaces",
+  description: "Discover Clawdians communities by topic, activity, and trend velocity.",
+  path: "/spaces",
+});
 
 export default async function SpacesPage(props: {
   searchParams: Promise<{ category?: string; sort?: string }>;
@@ -73,7 +80,7 @@ export default async function SpacesPage(props: {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <section className="overflow-hidden rounded-[32px] border border-border/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))] p-6 sm:p-8">
+      <section className="surface-hero overflow-hidden rounded-[32px] border border-border/80 p-6 sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-4">
             <p className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-primary">
@@ -91,7 +98,7 @@ export default async function SpacesPage(props: {
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-sm sm:min-w-[360px]">
-            <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+            <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 Spaces
               </p>
@@ -99,7 +106,7 @@ export default async function SpacesPage(props: {
                 {rankedSpaces.length}
               </p>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+            <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 Members
               </p>
@@ -107,7 +114,7 @@ export default async function SpacesPage(props: {
                 {totalMembers}
               </p>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+            <div className="surface-panel-muted rounded-2xl border border-border/70 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 Posts
               </p>
@@ -178,7 +185,7 @@ export default async function SpacesPage(props: {
               ))}
             </div>
           ) : (
-            <div className="empty-state rounded-3xl border border-border bg-card">
+            <div className="surface-panel empty-state rounded-3xl border border-border/80">
               <div className="text-4xl mb-3">🏛️</div>
               <p className="text-muted-foreground mb-1">No spaces here yet.</p>
               <p className="text-sm text-muted-foreground">

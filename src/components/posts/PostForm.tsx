@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import MarkdownBody from "./MarkdownBody";
+import MediaGallery from "./MediaGallery";
 
 interface PostFormProps {
   spaceId?: string;
@@ -22,6 +23,7 @@ interface PostFormProps {
 }
 
 const MAX_BODY = 10000;
+const MAX_MEDIA_ITEMS = 4;
 
 export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const router = useRouter();
@@ -29,13 +31,76 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaUrlDraft, setMediaUrlDraft] = useState("");
+  const [mediaItems, setMediaItems] = useState<string[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState(spaceId || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const needsTitle = type === "discussion" || type === "link";
+  const previewMediaItems = mediaUrlDraft.trim()
+    ? [...mediaItems, mediaUrlDraft.trim()]
+    : mediaItems;
+
+  const appendMediaItems = useCallback((items: string[]) => {
+    const sanitized = items.map((item) => item.trim()).filter(Boolean);
+    if (sanitized.length === 0) return;
+
+    setMediaItems((current) => {
+      const merged = [...current];
+
+      sanitized.forEach((item) => {
+        if (!merged.includes(item) && merged.length < MAX_MEDIA_ITEMS) {
+          merged.push(item);
+        }
+      });
+
+      return merged;
+    });
+  }, []);
+
+  const handleAddMediaUrl = useCallback(() => {
+    if (!mediaUrlDraft.trim()) return;
+    appendMediaItems([mediaUrlDraft]);
+    setMediaUrlDraft("");
+  }, [appendMediaItems, mediaUrlDraft]);
+
+  const handleUploadMedia = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files ?? []).filter((file) =>
+        file.type.startsWith("image/")
+      );
+
+      if (files.length === 0) {
+        return;
+      }
+
+      const results = await Promise.all(
+        files.map(
+          (file) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () =>
+                typeof reader.result === "string"
+                  ? resolve(reader.result)
+                  : reject(new Error("Invalid file result"));
+              reader.onerror = () => reject(new Error("File read failed"));
+              reader.readAsDataURL(file);
+            })
+        )
+      ).catch(() => [] as string[]);
+
+      appendMediaItems(results);
+      event.target.value = "";
+    },
+    [appendMediaItems]
+  );
+
+  const removeMediaItem = useCallback((value: string) => {
+    setMediaItems((current) => current.filter((item) => item !== value));
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     if (isSubmitting) return;
@@ -44,16 +109,26 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
       return;
     }
 
+    const finalMediaItems = Array.from(
+      new Set(previewMediaItems.map((item) => item.trim()).filter(Boolean))
+    ).slice(0, MAX_MEDIA_ITEMS);
+
+    if (type === "visual" && finalMediaItems.length === 0) {
+      setError("Add at least one image for a visual post.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
 
     try {
-      const payload: Record<string, string> = { type };
+      const payload: Record<string, string | string[]> = { type };
       if (title.trim()) payload.title = title.trim();
       if (body.trim()) payload.body = body.trim();
       if (url.trim() && type === "link") payload.url = url.trim();
-      if (mediaUrl.trim() && type === "visual")
-        payload.mediaUrls = JSON.stringify([mediaUrl.trim()]);
+      if (type === "visual" && finalMediaItems.length > 0) {
+        payload.mediaUrls = finalMediaItems;
+      }
       if (selectedSpaceId) payload.spaceId = selectedSpaceId;
 
       const res = await fetch("/api/posts", {
@@ -74,7 +149,17 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, needsTitle, title, body, url, mediaUrl, type, selectedSpaceId, router]);
+  }, [
+    body,
+    isSubmitting,
+    needsTitle,
+    previewMediaItems,
+    router,
+    selectedSpaceId,
+    title,
+    type,
+    url,
+  ]);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -163,15 +248,75 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
 
           {/* Media URL for visual type */}
           {type === "visual" && (
-            <div className="space-y-2">
-              <Label htmlFor="mediaUrl">Media URL</Label>
-              <Input
-                id="mediaUrl"
-                type="url"
-                placeholder="https://example.com/image.png"
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-              />
+            <div className="space-y-3">
+              <Label htmlFor="mediaUrl">Images</Label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="mediaUrl"
+                  type="url"
+                  placeholder="https://example.com/image.png"
+                  value={mediaUrlDraft}
+                  onChange={(e) => setMediaUrlDraft(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddMediaUrl}
+                >
+                  Add URL
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  multiple
+                  onChange={handleUploadMedia}
+                  type="file"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Upload image
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Up to {MAX_MEDIA_ITEMS} images. Local uploads are stored inline for now.
+                </p>
+              </div>
+
+              {previewMediaItems.length > 0 ? (
+                <div className="surface-panel-muted space-y-3 rounded-2xl border border-border/80 p-3">
+                  <MediaGallery
+                    urls={previewMediaItems.slice(0, MAX_MEDIA_ITEMS)}
+                    altPrefix="New post image"
+                    compact
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {mediaItems.map((item, index) => (
+                      <button
+                        key={`${item}-${index}`}
+                        className="rounded-full border border-border/80 bg-background/45 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        onClick={() => removeMediaItem(item)}
+                        type="button"
+                      >
+                        Remove image {index + 1}
+                      </button>
+                    ))}
+                    {mediaUrlDraft.trim() ? (
+                      <button
+                        className="rounded-full border border-dashed border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary transition-colors hover:bg-primary/15"
+                        onClick={handleAddMediaUrl}
+                        type="button"
+                      >
+                        Add draft image
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 

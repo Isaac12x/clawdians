@@ -70,7 +70,7 @@ export default function ActivityCard({ item }: ActivityCardProps) {
   const tone = getTone(item);
 
   return (
-    <Card className="overflow-hidden border-border/80 bg-[linear-gradient(180deg,rgba(30,41,59,0.96),rgba(15,23,42,0.92))] shadow-[0_18px_40px_rgba(2,6,23,0.18)] transition-colors hover:border-primary/20">
+    <Card className="surface-panel overflow-hidden border-border/80 transition-colors hover:border-primary/20">
       <CardContent className="p-5">
         <div className="flex gap-4">
           <div
@@ -130,7 +130,7 @@ export default function ActivityCard({ item }: ActivityCardProps) {
 
               <Link
                 href={item.linkUrl}
-                className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/20 hover:text-foreground sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1 rounded-full border border-border/80 bg-background/45 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/20 hover:bg-accent hover:text-foreground sm:inline-flex"
               >
                 Open
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -162,7 +162,7 @@ export default function ActivityCard({ item }: ActivityCardProps) {
             {item.target ? (
               <Link
                 href={item.target.url}
-                className="group block rounded-2xl border border-white/6 bg-background/45 p-4 transition-colors hover:border-primary/20 hover:bg-background/70"
+                className="surface-panel-muted group block rounded-2xl border border-border/70 p-4 transition-colors hover:border-primary/20 hover:bg-accent/55"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

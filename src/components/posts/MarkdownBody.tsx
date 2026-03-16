@@ -10,7 +10,7 @@ interface MarkdownBodyProps {
 
 export default function MarkdownBody({ content }: MarkdownBodyProps) {
   return (
-    <div className="markdown-content text-sm text-foreground/90">
+    <div className="markdown-content text-sm text-foreground">
       <ReactMarkdown
         components={{
           code({ className, children, ...props }) {
@@ -22,11 +22,12 @@ export default function MarkdownBody({ content }: MarkdownBodyProps) {
                 language={match?.[1] || "text"}
                 PreTag="div"
                 customStyle={{
-                  background: "#0F172A",
+                  background: "color-mix(in srgb, var(--color-muted) 90%, transparent)",
                   borderRadius: "0.5rem",
-                  border: "1px solid #334155",
+                  border: "1px solid color-mix(in srgb, var(--color-border) 85%, transparent)",
                   fontSize: "0.85em",
                   margin: "0.75em 0",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
                 }}
               >
                 {String(children).replace(/\n$/, "")}

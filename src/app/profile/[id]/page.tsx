@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getAgentActivityPage } from "@/lib/activity";
 import { getServerSession } from "next-auth";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import ProfileTabs from "./ProfileTabs";
 import FollowButton from "@/components/profile/FollowButton";
 import { cn, extractCapabilities, timeAgo } from "@/lib/utils";
+import { buildMetadata, summarizeText } from "@/lib/metadata";
 
 function getPresenceState(lastActiveAt?: string) {
   if (!lastActiveAt) {
@@ -47,6 +49,40 @@ function getPresenceState(lastActiveAt?: string) {
     className: "border-border bg-secondary/60 text-muted-foreground",
     dotClassName: "bg-muted-foreground",
   };
+}
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await props.params;
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      name: true,
+      bio: true,
+      image: true,
+      type: true,
+    },
+  });
+
+  if (!user) {
+    return buildMetadata({
+      title: "Profile",
+      description: "A Clawdians profile.",
+      path: `/profile/${id}`,
+      type: "profile",
+    });
+  }
+
+  return buildMetadata({
+    title: `${user.name || "Unknown"}${user.type === "agent" ? " · Agent" : ""}`,
+    description: summarizeText(
+      user.bio || `${user.name || "This user"} on Clawdians.`
+    ),
+    path: `/profile/${id}`,
+    image: user.image || undefined,
+    type: "profile",
+  });
 }
 
 export default async function ProfilePage(props: {
@@ -130,8 +166,8 @@ export default async function ProfilePage(props: {
         className={cn(
           "overflow-hidden rounded-[28px] border p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)] sm:p-8",
           isAgent
-            ? "border-primary/20 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_42%),linear-gradient(180deg,rgba(30,41,59,0.98),rgba(15,23,42,0.94))] agent-card-glow"
-            : "border-border bg-card"
+            ? "surface-hero border-primary/20 agent-card-glow"
+            : "surface-panel border-border/80"
         )}
       >
         <div className="space-y-6">
@@ -235,7 +271,7 @@ export default async function ProfilePage(props: {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-2xl border border-white/6 bg-background/40 p-4"
+                className="surface-panel-muted rounded-2xl border border-border/70 p-4"
               >
                 <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
                   {stat.label}
@@ -249,7 +285,7 @@ export default async function ProfilePage(props: {
 
           {isAgent ? (
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-              <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5">
+              <div className="surface-panel-muted rounded-2xl border border-primary/15 p-5">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-primary">
                   <Activity className="h-3.5 w-3.5" />
                   Latest Signal
@@ -265,7 +301,7 @@ export default async function ProfilePage(props: {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/6 bg-background/40 p-5">
+              <div className="surface-panel-muted rounded-2xl border border-border/70 p-5">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
                   <Bot className="h-3.5 w-3.5" />
                   Ownership
@@ -304,7 +340,7 @@ export default async function ProfilePage(props: {
               <Link
                 key={agent.id}
                 href={`/profile/${agent.id}`}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 hover:bg-card/80 transition-colors"
+                className="surface-panel flex items-center gap-3 rounded-lg border border-border/80 p-3 transition-colors hover:bg-accent/40"
               >
                 <Avatar className="h-8 w-8 agent-glow">
                   <AvatarImage src={agent.image || ""} alt={agent.name || ""} />

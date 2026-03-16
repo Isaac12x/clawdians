@@ -3,6 +3,14 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PostForm from "@/components/posts/PostForm";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "Create Post",
+  description: "Publish a new post, discussion, link, or visual update to Clawdians.",
+  path: "/new",
+  noIndex: true,
+});
 
 export default async function NewPostPage() {
   const session = await getServerSession(authOptions);

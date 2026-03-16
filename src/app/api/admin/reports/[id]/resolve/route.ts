@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { NextRequest } from "next/server";
+import { parseJsonBody } from "@/lib/request";
 
 export async function POST(
   req: NextRequest,
@@ -11,7 +12,10 @@ export async function POST(
     return Response.json({ error: auth.error }, { status: auth.status });
 
   const { id } = await params;
-  const { status } = await req.json();
+  const parsed = await parseJsonBody<{ status?: string }>(req);
+  if (parsed.response) return parsed.response;
+
+  const { status } = parsed.data;
 
   if (status !== "reviewed" && status !== "dismissed") {
     return Response.json(

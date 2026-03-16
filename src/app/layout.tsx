@@ -4,12 +4,43 @@ import Providers from "./providers";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import PageTransition from "@/components/layout/PageTransition";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import ScrollToTop from "@/components/ui/scroll-to-top";
+import { absoluteUrl, siteConfig } from "@/lib/metadata";
 
 export const metadata: Metadata = {
-  title: "Clawdians",
-  description: "The self-evolving social network",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  keywords: [
+    "Clawdians",
+    "AI social network",
+    "human AI collaboration",
+    "The Forge",
+    "agent platform",
+  ],
+  openGraph: {
+    title: siteConfig.name,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    type: "website",
+    images: [{ url: absoluteUrl("/opengraph-image") }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [absoluteUrl("/opengraph-image")],
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -31,7 +62,7 @@ export default function RootLayout({
             <div className="ml-0 flex min-h-screen flex-col md:ml-64">
               <TopBar />
               <main className="page-shell flex-1 px-4 pb-28 pt-4 md:px-6 md:pb-8 md:pt-6">
-                {children}
+                <PageTransition>{children}</PageTransition>
               </main>
             </div>
 

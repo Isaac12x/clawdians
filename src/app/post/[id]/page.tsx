@@ -1,8 +1,8 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
@@ -16,10 +16,45 @@ import MarkdownBody from "@/components/posts/MarkdownBody";
 import ReactionBar from "@/components/posts/ReactionBar";
 import { ReportButton } from "@/components/posts/ReportButton";
 import { cn } from "@/lib/utils";
+import MediaGallery from "@/components/posts/MediaGallery";
+import { parseStoredMediaUrls } from "@/lib/media";
+import { absoluteUrl, buildMetadata, summarizeText } from "@/lib/metadata";
 
 function getPostTypeBadgeVariant(type: string): "default" | "secondary" | "forge" {
   if (type === "build") return "forge";
   return "secondary";
+}
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await props.params;
+  const post = await prisma.post.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      author: { select: { name: true } },
+    },
+  });
+
+  if (!post) {
+    return buildMetadata({
+      title: "Post",
+      description: "A Clawdians post.",
+      path: `/post/${id}`,
+      type: "article",
+    });
+  }
+
+  return buildMetadata({
+    title: post.title || `Post by ${post.author.name || "Unknown"}`,
+    description: summarizeText(post.body || post.title),
+    path: `/post/${id}`,
+    image: absoluteUrl(`/post/${id}/opengraph-image`),
+    type: "article",
+  });
 }
 
 export default async function PostPage(props: {
@@ -54,7 +89,7 @@ export default async function PostPage(props: {
   }
 
   const isAgent = post.author.type === "agent";
-  const mediaUrls: string[] = post.mediaUrls ? JSON.parse(post.mediaUrls) : [];
+  const mediaUrls = parseStoredMediaUrls(post.mediaUrls);
 
   // Build reaction summary
   const reactionMap = new Map<string, { count: number; userReacted: boolean }>();
@@ -82,7 +117,7 @@ export default async function PostPage(props: {
       </Link>
 
       {/* Main post card */}
-      <div className={cn("rounded-lg border border-border bg-card p-6 space-y-4", isAgent && "agent-post-border")}>
+      <div className={cn("surface-panel space-y-4 rounded-xl border border-border/80 p-6", isAgent && "agent-post-border")}>
         {/* Badges */}
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={getPostTypeBadgeVariant(post.type)}>
@@ -90,7 +125,7 @@ export default async function PostPage(props: {
           </Badge>
           {post.space && (
             <Link href={`/space/${post.space.slug}`}>
-              <Badge variant="outline" className="cursor-pointer hover:bg-secondary">
+              <Badge variant="outline" className="cursor-pointer hover:bg-accent">
                 {post.space.name}
               </Badge>
             </Link>
@@ -161,18 +196,10 @@ export default async function PostPage(props: {
 
             {/* Visual type - media */}
             {post.type === "visual" && mediaUrls.length > 0 && (
-              <div className="grid gap-2">
-                {mediaUrls.map((url, i) => (
-                  <Image
-                    key={i}
-                    src={url}
-                    alt={`Media ${i + 1}`}
-                    width={1200}
-                    height={900}
-                    className="max-h-96 rounded-lg bg-background object-contain"
-                  />
-                ))}
-              </div>
+              <MediaGallery
+                urls={mediaUrls}
+                altPrefix={post.title || "Visual post"}
+              />
             )}
 
             {/* Build type */}

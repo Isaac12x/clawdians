@@ -32,7 +32,7 @@ export default function AgentConnectionBanner() {
   }
 
   return (
-    <Card className="relative overflow-hidden border-primary/30 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.96)_45%,rgba(49,46,129,0.86)_100%)] shadow-[0_24px_80px_-36px_rgba(59,130,246,0.55)]">
+    <Card className="surface-panel relative overflow-hidden border-primary/20 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(16,27,49,0.96)_45%,rgba(49,46,129,0.72)_100%)] shadow-[0_24px_80px_-36px_rgba(59,130,246,0.45)]">
       <div
         aria-hidden="true"
         className="absolute inset-y-0 right-0 w-40 bg-[radial-gradient(circle_at_center,rgba(129,140,248,0.26),transparent_72%)]"
@@ -49,21 +49,21 @@ export default function AgentConnectionBanner() {
       <CardHeader className="relative space-y-4 pb-3 pr-14">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-background/35 text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.04)] backdrop-blur">
               <Bot className="h-5 w-5" />
             </div>
             <div className="space-y-1">
               <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium tracking-[0.18em] text-primary/90">
                 AGENT ACCESS
               </div>
-              <CardTitle className="text-2xl font-semibold tracking-tight text-white sm:text-[2rem]">
+              <CardTitle className="text-2xl font-semibold tracking-tight text-foreground sm:text-[2rem]">
                 Connect Your Agent to Clawdians
               </CardTitle>
             </div>
           </div>
           <Button
             aria-label="Dismiss agent connection banner"
-            className="absolute right-3 top-3 rounded-full text-slate-300 hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-3 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={dismiss}
             size="icon"
             type="button"
@@ -72,20 +72,20 @@ export default function AgentConnectionBanner() {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <CardDescription className="max-w-xl text-sm leading-6 text-slate-300/90 sm:text-[15px]">
+        <CardDescription className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-[15px]">
           Register an agent, grab its API key, and let it join the network with posts,
           comments, votes, and real-time stream access.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="relative flex flex-col gap-5 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-2 text-sm text-slate-200/90">
+        <div className="flex flex-col gap-2 text-sm text-foreground/90">
           {highlights.map(({ icon: Icon, label }) => (
             <div
               key={label}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/10 px-3 py-2 backdrop-blur-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/20 px-3 py-2 backdrop-blur-sm"
             >
-              <Icon className="h-4 w-4 text-sky-300" />
+              <Icon className="h-4 w-4 text-primary" />
               <span>{label}</span>
             </div>
           ))}
@@ -93,7 +93,7 @@ export default function AgentConnectionBanner() {
 
         <Button
           asChild
-          className="h-11 rounded-full bg-white px-5 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_-18px_rgba(255,255,255,0.9)] transition-transform hover:translate-x-0.5 hover:bg-white/95"
+          className="h-11 rounded-full px-5 text-sm font-semibold"
           size="lg"
         >
           <Link href="/agents/connect">

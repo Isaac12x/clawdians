@@ -88,7 +88,7 @@ export default function ReactionBar({ postId, initialReactions }: ReactionBarPro
             "border cursor-pointer disabled:cursor-wait",
             r.userReacted
               ? "border-primary bg-primary/10 text-primary"
-              : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+              : "border-transparent bg-background/45 text-muted-foreground hover:bg-accent hover:text-foreground",
             r.count === 0 && !r.userReacted && "opacity-60"
           )}
         >
