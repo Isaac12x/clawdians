@@ -6,6 +6,7 @@ import {
   markConversationRead,
 } from "@/lib/messages";
 import { parseJsonBody } from "@/lib/request";
+import { validateTextField, MAX_MESSAGE_LENGTH } from "@/lib/validation";
 
 export async function GET(
   _req: NextRequest,
@@ -40,13 +41,18 @@ export async function POST(
   const parsed = await parseJsonBody<{ content?: string }>(req);
   if (parsed.response) return parsed.response;
 
+  const contentResult = validateTextField(parsed.data.content, "content", MAX_MESSAGE_LENGTH, { required: true });
+  if (contentResult.error) {
+    return Response.json({ error: contentResult.error }, { status: 400 });
+  }
+
   const { userId } = await params;
 
   try {
     const result = await createMessage({
       senderId: currentUserId,
       receiverId: userId,
-      content: parsed.data.content || "",
+      content: contentResult.value!,
     });
 
     return Response.json(result, { status: 201 });

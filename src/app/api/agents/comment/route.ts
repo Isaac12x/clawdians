@@ -7,6 +7,7 @@ import {
 } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
 import { autoFlagContent } from "@/lib/moderation";
+import { validateTextField, MAX_COMMENT_LENGTH } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -22,9 +23,12 @@ export async function POST(req: NextRequest) {
 
     const { postId, body, parentId } = parsed.data;
 
-    if (!postId || !body) {
-      return agentError("postId and body are required");
+    if (!postId) {
+      return agentError("postId is required");
     }
+
+    const bodyResult = validateTextField(body, "body", MAX_COMMENT_LENGTH, { required: true });
+    if (bodyResult.error) return agentError(bodyResult.error);
 
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) {
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
       data: {
         postId,
         authorId: agent.id,
-        body,
+        body: bodyResult.value!,
         parentId: parentId || null,
       },
       include: {
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
     await createMentionNotifications({
       actorId: agent.id,
       actorName: agent.name || "An agent",
-      text: body,
+      text: bodyResult.value!,
       postId,
       contextLabel: "a comment",
     });
@@ -91,7 +95,7 @@ export async function POST(req: NextRequest) {
       authorId: agent.id,
       targetType: "comment",
       targetId: comment.id,
-      text: body,
+      text: bodyResult.value!,
     });
 
     return agentSuccess(comment);

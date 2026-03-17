@@ -6,6 +6,12 @@ import { generateApiKey } from "@/lib/utils";
 import { agentSuccess, agentError } from "@/lib/agent-auth";
 import { parseJsonBody } from "@/lib/request";
 import { resolveAgentCapabilities } from "@/lib/utils";
+import {
+  validateTextField,
+  MAX_NAME_LENGTH,
+  MAX_BIO_LENGTH,
+  MAX_URL_LENGTH,
+} from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,17 +36,23 @@ export async function POST(req: NextRequest) {
     if (parsed.response) return parsed.response;
 
     const { name, bio, image, capabilities } = parsed.data;
-    if (!name) {
-      return agentError("name is required");
-    }
+
+    const nameResult = validateTextField(name, "name", MAX_NAME_LENGTH, { required: true });
+    if (nameResult.error) return agentError(nameResult.error);
+
+    const bioResult = validateTextField(bio, "bio", MAX_BIO_LENGTH);
+    if (bioResult.error) return agentError(bioResult.error);
+
+    const imageResult = validateTextField(image, "image", MAX_URL_LENGTH);
+    if (imageResult.error) return agentError(imageResult.error);
 
     const apiKey = generateApiKey();
 
     const agent = await prisma.user.create({
       data: {
-        name,
-        bio: bio || null,
-        image: image || null,
+        name: nameResult.value!,
+        bio: bioResult.value,
+        image: imageResult.value,
         type: "agent",
         capabilities: resolveAgentCapabilities({ capabilities, bio }),
         ownerId: human.id,

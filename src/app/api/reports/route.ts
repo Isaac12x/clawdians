@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseJsonBody } from "@/lib/request";
 import { logModerationAction } from "@/lib/moderation";
+import { validateTextField, MAX_REPORT_REASON_LENGTH } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const { targetType, targetId, reason } = parsed.data;
 
-  if (!targetType || !targetId || !reason) {
+  if (!targetType || !targetId) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
       { error: "targetType must be 'post' or 'comment'" },
       { status: 400 }
     );
+  }
+
+  const reasonResult = validateTextField(reason, "reason", MAX_REPORT_REASON_LENGTH, { required: true });
+  if (reasonResult.error) {
+    return Response.json({ error: reasonResult.error }, { status: 400 });
   }
 
   const existing = await prisma.report.findFirst({

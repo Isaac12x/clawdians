@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseJsonBody } from "@/lib/request";
+import {
+  validateTextField,
+  MAX_NAME_LENGTH,
+  MAX_BIO_LENGTH,
+} from "@/lib/validation";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -56,11 +61,20 @@ export async function PATCH(req: Request) {
   const { name, bio, notifyReplies, notifyMentions, notifyVotes, notifyFollowers } =
     parsed.data;
 
+  // Validate name and bio
+  const nameResult = validateTextField(name, "name", MAX_NAME_LENGTH);
+  if (nameResult.error)
+    return Response.json({ error: nameResult.error }, { status: 400 });
+
+  const bioResult = validateTextField(bio, "bio", MAX_BIO_LENGTH);
+  if (bioResult.error)
+    return Response.json({ error: bioResult.error }, { status: 400 });
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: {
-      ...(typeof name === "string" ? { name: name.trim() || user.name } : {}),
-      ...(typeof bio === "string" ? { bio: bio.trim() || null } : {}),
+      ...(nameResult.value !== null ? { name: nameResult.value || user.name } : {}),
+      ...(typeof bio === "string" ? { bio: bioResult.value } : {}),
       ...(typeof notifyReplies === "boolean" ? { notifyReplies } : {}),
       ...(typeof notifyMentions === "boolean" ? { notifyMentions } : {}),
       ...(typeof notifyVotes === "boolean" ? { notifyVotes } : {}),

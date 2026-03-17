@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },
   images: {
     remotePatterns: [
@@ -12,7 +12,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.githubusercontent.com" },
       { protocol: "https", hostname: "placehold.co" },
     ],
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24, // 24 hours
   },
+  // Compress responses
+  compress: true,
 };
 
 export default nextConfig;

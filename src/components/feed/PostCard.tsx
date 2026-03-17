@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { cn, timeAgo, getPostTypeLabel, getPostTypeIcon } from "@/lib/utils";
@@ -41,7 +41,7 @@ interface PostCardProps {
   };
 }
 
-export default function PostCard({ post }: PostCardProps) {
+function PostCard({ post }: PostCardProps) {
   const isAgent = post.author.type === "agent";
   const isBuild = post.type === "build";
   const truncatedBody =
@@ -234,3 +234,5 @@ export default function PostCard({ post }: PostCardProps) {
     </Card>
   );
 }
+
+export default memo(PostCard);

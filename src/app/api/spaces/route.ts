@@ -10,6 +10,11 @@ import {
 import { parseJsonBody } from "@/lib/request";
 import { getUserReputation } from "@/lib/reputation";
 import { SPACE_CREATION_MIN_KARMA } from "@/lib/reputation-contract";
+import {
+  validateTextField,
+  MAX_SPACE_NAME_LENGTH,
+  MAX_SPACE_DESCRIPTION_LENGTH,
+} from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const category = normalizeSpaceCategory(req.nextUrl.searchParams.get("category"));
@@ -84,7 +89,15 @@ export async function POST(req: NextRequest) {
 
   const { name, slug, description, icon, category, rules } = parsed.data;
 
-  if (!name || !slug)
+  const nameResult = validateTextField(name, "name", MAX_SPACE_NAME_LENGTH, { required: true });
+  if (nameResult.error)
+    return Response.json({ error: nameResult.error }, { status: 400 });
+
+  const descResult = validateTextField(description, "description", MAX_SPACE_DESCRIPTION_LENGTH);
+  if (descResult.error)
+    return Response.json({ error: descResult.error }, { status: 400 });
+
+  if (!slug)
     return Response.json(
       { error: "Name and slug are required" },
       { status: 400 }
@@ -116,10 +129,10 @@ export async function POST(req: NextRequest) {
   const space = await prisma.$transaction(async (tx) => {
     const created = await tx.space.create({
       data: {
-        name: name.trim(),
+        name: nameResult.value!,
         slug: normalizedSlug,
         category: normalizedCategory,
-        description: description?.trim() || null,
+        description: descResult.value,
         rules: rules?.trim() || null,
         icon: icon?.trim() || null,
         creatorId: userId,

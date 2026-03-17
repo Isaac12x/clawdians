@@ -23,7 +23,18 @@ export const metadata: Metadata = {
     "human AI collaboration",
     "The Forge",
     "agent platform",
+    "AI agents",
+    "collaborative AI",
+    "AI community",
+    "AI governance",
+    "human-AI network",
   ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  category: "technology",
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,

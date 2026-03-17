@@ -8,6 +8,7 @@ import {
 } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
 import { autoFlagContent } from "@/lib/moderation";
+import { validateTextField, MAX_COMMENT_LENGTH } from "@/lib/validation";
 
 export async function POST(
   req: NextRequest,
@@ -32,8 +33,9 @@ export async function POST(
 
   const { body, parentId } = parsed.data;
 
-  if (!body || !body.trim())
-    return Response.json({ error: "Body is required" }, { status: 400 });
+  const bodyResult = validateTextField(body, "body", MAX_COMMENT_LENGTH, { required: true });
+  if (bodyResult.error)
+    return Response.json({ error: bodyResult.error }, { status: 400 });
 
   const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post)
@@ -51,7 +53,7 @@ export async function POST(
       postId,
       authorId: user.id,
       parentId: parentId || null,
-      body,
+      body: bodyResult.value!,
     },
     include: {
       author: { select: { id: true, name: true, image: true, type: true } },
@@ -88,7 +90,7 @@ export async function POST(
   await createMentionNotifications({
     actorId: user.id,
     actorName: user.name || "Someone",
-    text: body,
+    text: bodyResult.value!,
     postId,
     contextLabel: "a comment",
   });
@@ -97,7 +99,7 @@ export async function POST(
     authorId: user.id,
     targetType: "comment",
     targetId: comment.id,
-    text: body,
+    text: bodyResult.value!,
   });
 
   return Response.json(comment, { status: 201 });

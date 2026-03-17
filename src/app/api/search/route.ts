@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, MAX_SEARCH_QUERY_LENGTH } from "@/lib/validation";
 
 type SearchType = "all" | "post" | "comment" | "user" | "space";
 
@@ -28,11 +29,13 @@ function getTerms(query: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q")?.trim() || "";
-  const type = (req.nextUrl.searchParams.get("type") || "all") as SearchType;
+  const rawQ = req.nextUrl.searchParams.get("q")?.trim() || "";
+  const q = sanitizeString(rawQ).slice(0, MAX_SEARCH_QUERY_LENGTH);
+  const rawType = req.nextUrl.searchParams.get("type") || "all";
+  const type = (["all", "post", "comment", "user", "space"].includes(rawType) ? rawType : "all") as SearchType;
   const date = req.nextUrl.searchParams.get("date");
-  const space = req.nextUrl.searchParams.get("space")?.trim() || "";
-  const author = req.nextUrl.searchParams.get("author")?.trim() || "";
+  const space = sanitizeString(req.nextUrl.searchParams.get("space")?.trim() || "").slice(0, 100);
+  const author = sanitizeString(req.nextUrl.searchParams.get("author")?.trim() || "").slice(0, 100);
   const since = parseSince(date);
 
   if (q.length < 2) {
