@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { startTransition, useCallback, useState } from "react";
 import PostCard from "./PostCard";
 import { Button } from "@/components/ui/button";
 
@@ -59,8 +59,10 @@ export default function FeedList({
       );
       if (res.ok) {
         const newPosts: PostData[] = await res.json();
-        if (newPosts.length < PAGE_SIZE) setHasMore(false);
-        setPosts((prev) => [...prev, ...newPosts]);
+        startTransition(() => {
+          if (newPosts.length < PAGE_SIZE) setHasMore(false);
+          setPosts((prev) => [...prev, ...newPosts]);
+        });
       }
     } catch {
       // Silently fail
@@ -71,7 +73,7 @@ export default function FeedList({
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3" aria-busy={loading}>
         {posts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
+  canUseNextImage,
   DEFAULT_IMAGE_BLUR,
   getImagePlaceholder,
   isDataUrl,
@@ -33,6 +34,12 @@ export default function MediaGallery({
     <div className={cn("grid gap-3", getGridClass(urls.length), className)}>
       {urls.map((url, index) => {
         const single = urls.length === 1 && !compact;
+        const imageClassName = cn(
+          "transition-transform duration-300 group-hover:scale-[1.03]",
+          single
+            ? "object-contain bg-background/35 p-2"
+            : "object-cover"
+        );
 
         return (
           <div
@@ -42,25 +49,32 @@ export default function MediaGallery({
               single ? "min-h-[240px]" : "aspect-square"
             )}
           >
-            <Image
-              alt={`${altPrefix} ${index + 1}`}
-              blurDataURL={DEFAULT_IMAGE_BLUR}
-              className={cn(
-                "transition-transform duration-300 group-hover:scale-[1.03]",
-                single
-                  ? "object-contain bg-background/35 p-2"
-                  : "object-cover"
-              )}
-              fill
-              placeholder={getImagePlaceholder(url)}
-              sizes={
-                single
-                  ? "(max-width: 768px) 100vw, 720px"
-                  : "(max-width: 768px) 50vw, 240px"
-              }
-              src={url}
-              unoptimized={isDataUrl(url)}
-            />
+            {canUseNextImage(url) ? (
+              <Image
+                alt={`${altPrefix} ${index + 1}`}
+                blurDataURL={DEFAULT_IMAGE_BLUR}
+                className={imageClassName}
+                fill
+                placeholder={getImagePlaceholder(url)}
+                sizes={
+                  single
+                    ? "(max-width: 768px) 100vw, 720px"
+                    : "(max-width: 768px) 50vw, 240px"
+                }
+                src={url}
+                unoptimized={isDataUrl(url)}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`${altPrefix} ${index + 1}`}
+                className={cn("absolute inset-0 h-full w-full", imageClassName)}
+                decoding="async"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                src={url}
+              />
+            )}
           </div>
         );
       })}

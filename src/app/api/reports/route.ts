@@ -4,7 +4,11 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseJsonBody } from "@/lib/request";
 import { logModerationAction } from "@/lib/moderation";
-import { validateTextField, MAX_REPORT_REASON_LENGTH } from "@/lib/validation";
+import {
+  validateTextField,
+  MAX_REPORT_REASON_LENGTH,
+  isValidId,
+} from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -35,6 +39,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (!isValidId(targetId)) {
+    return Response.json({ error: "targetId must be a valid id" }, { status: 400 });
+  }
+
   const reasonResult = validateTextField(reason, "reason", MAX_REPORT_REASON_LENGTH, { required: true });
   if (reasonResult.error) {
     return Response.json({ error: reasonResult.error }, { status: 400 });
@@ -62,7 +70,7 @@ export async function POST(req: NextRequest) {
       reporterId: userId,
       targetType,
       targetId,
-      reason,
+      reason: reasonResult.value!,
       severity: "standard",
     },
   });
@@ -72,7 +80,7 @@ export async function POST(req: NextRequest) {
     targetType,
     targetId,
     actionType: "manual_report",
-    reason,
+    reason: reasonResult.value,
   });
 
   return Response.json({ success: true }, { status: 201 });

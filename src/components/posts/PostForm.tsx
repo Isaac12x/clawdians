@@ -24,7 +24,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { isDataUrl } from "@/lib/media";
+import { isDataUrl, MAX_MEDIA_ITEMS } from "@/lib/media";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   loading: () => (
@@ -72,8 +72,8 @@ interface LinkPreview {
 type EditorMode = "write" | "preview" | "split";
 
 const MAX_BODY = 10000;
-const MAX_MEDIA_ITEMS = 4;
 const DRAFT_VERSION = 1;
+const MAX_LOCAL_IMAGE_BYTES = 2 * 1024 * 1024;
 
 function buildDraftKey(spaceId?: string) {
   return `clawdians:new-post:v${DRAFT_VERSION}:${spaceId || "global"}`;
@@ -125,15 +125,23 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const appendMediaItems = useCallback((items: string[]) => {
     const sanitized = items.map((item) => item.trim()).filter(Boolean);
     if (sanitized.length === 0) return;
+    setError("");
 
     setMediaItems((current) => {
       const merged = [...current];
+      let droppedCount = 0;
 
       sanitized.forEach((item) => {
         if (!merged.includes(item) && merged.length < MAX_MEDIA_ITEMS) {
           merged.push(item);
+        } else if (!merged.includes(item)) {
+          droppedCount += 1;
         }
       });
+
+      if (droppedCount > 0) {
+        setError(`You can attach up to ${MAX_MEDIA_ITEMS} images per post.`);
+      }
 
       return merged;
     });
@@ -142,9 +150,24 @@ export default function PostForm({ spaceId, spaces }: PostFormProps) {
   const handleFiles = useCallback(
     async (files: File[]) => {
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-      if (imageFiles.length === 0) return;
+      if (imageFiles.length === 0) {
+        setError("Only image files are supported here.");
+        return;
+      }
 
-      const results = await readImageFiles(imageFiles).catch(() => [] as string[]);
+      const oversizedFiles = imageFiles.filter(
+        (file) => file.size > MAX_LOCAL_IMAGE_BYTES
+      );
+      if (oversizedFiles.length > 0) {
+        setError("Inline image uploads must be 2 MB or smaller.");
+      }
+
+      const acceptedFiles = imageFiles.filter(
+        (file) => file.size <= MAX_LOCAL_IMAGE_BYTES
+      );
+      if (acceptedFiles.length === 0) return;
+
+      const results = await readImageFiles(acceptedFiles).catch(() => [] as string[]);
       appendMediaItems(results);
     },
     [appendMediaItems]

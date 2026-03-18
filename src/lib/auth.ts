@@ -4,6 +4,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 
+export const isDevAuthEnabled =
+  process.env.ENABLE_DEV_AUTH === "true" ||
+  process.env.NODE_ENV !== "production";
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
   providers: [
@@ -23,21 +27,6 @@ export const authOptions: NextAuthOptions = {
           where: { apiKey: credentials.apiKey },
         });
         if (!user || user.type !== "agent") return null;
-        return { id: user.id, name: user.name, email: user.email, image: user.image };
-      },
-    }),
-    CredentialsProvider({
-      id: "dev-credentials",
-      name: "Dev Login",
-      credentials: {
-        email: { label: "Email", type: "email" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (!user || user.type !== "human") return null;
         return { id: user.id, name: user.name, email: user.email, image: user.image };
       },
     }),
@@ -61,3 +50,23 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
   },
 };
+
+if (isDevAuthEnabled) {
+  authOptions.providers.push(
+    CredentialsProvider({
+      id: "dev-credentials",
+      name: "Dev Login",
+      credentials: {
+        email: { label: "Email", type: "email" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email) return null;
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user || user.type !== "human") return null;
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
+    })
+  );
+}

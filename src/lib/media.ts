@@ -14,6 +14,15 @@ const shimmerSvg = `
   </svg>
 `;
 
+const OPTIMIZED_IMAGE_HOSTS = new Set([
+  "avatars.githubusercontent.com",
+  "oaidalleapiprodscus.blob.core.windows.net",
+  "placehold.co",
+]);
+const OPTIMIZED_IMAGE_SUFFIXES = [".githubusercontent.com"];
+const INLINE_IMAGE_PREFIX = "data:image/";
+const MAX_INLINE_MEDIA_LENGTH = 2_500_000;
+
 function toBase64(value: string) {
   if (typeof window === "undefined") {
     return Buffer.from(value).toString("base64");
@@ -23,9 +32,44 @@ function toBase64(value: string) {
 }
 
 export const DEFAULT_IMAGE_BLUR = `data:image/svg+xml;base64,${toBase64(shimmerSvg)}`;
+export const MAX_MEDIA_ITEMS = 4;
 
 export function isDataUrl(value: string) {
-  return value.startsWith("data:");
+  return value.startsWith(INLINE_IMAGE_PREFIX);
+}
+
+export function isValidMediaUrl(value: string) {
+  if (isDataUrl(value)) {
+    return value.length <= MAX_INLINE_MEDIA_LENGTH;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+}
+
+export function canUseNextImage(value: string) {
+  if (isDataUrl(value)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    return (
+      OPTIMIZED_IMAGE_HOSTS.has(hostname) ||
+      OPTIMIZED_IMAGE_SUFFIXES.some((suffix) => hostname.endsWith(suffix))
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function getImagePlaceholder(value: string) {
@@ -37,14 +81,16 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 export function normalizeMediaUrlsInput(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter(isNonEmptyString);
-  }
+  const strings = Array.isArray(value)
+    ? value.filter(isNonEmptyString)
+    : typeof value === "string"
+      ? normalizeMediaString(value)
+      : [];
 
-  if (typeof value !== "string") {
-    return [];
-  }
+  return [...new Set(strings.map((item) => item.trim()).filter(Boolean))];
+}
 
+function normalizeMediaString(value: string): string[] {
   const trimmed = value.trim();
   if (!trimmed) {
     return [];
@@ -57,13 +103,44 @@ export function normalizeMediaUrlsInput(value: unknown): string[] {
     }
 
     if (typeof parsed === "string") {
-      return normalizeMediaUrlsInput(parsed);
+      return normalizeMediaString(parsed);
     }
   } catch {
     return [trimmed];
   }
 
   return [];
+}
+
+export function validateMediaUrlsInput(
+  value: unknown,
+  options?: { required?: boolean; maxItems?: number }
+): { value: string[]; error: string | null } {
+  const maxItems = options?.maxItems ?? MAX_MEDIA_ITEMS;
+  const urls = normalizeMediaUrlsInput(value);
+
+  if (options?.required && urls.length === 0) {
+    return { value: [], error: "mediaUrls is required" };
+  }
+
+  if (urls.length > maxItems) {
+    return {
+      value: [],
+      error: `mediaUrls must contain at most ${maxItems} items`,
+    };
+  }
+
+  for (const url of urls) {
+    if (!isValidMediaUrl(url)) {
+      return {
+        value: [],
+        error:
+          "mediaUrls must use HTTPS URLs or inline image data URLs smaller than 2.5 MB",
+      };
+    }
+  }
+
+  return { value: urls, error: null };
 }
 
 export function parseStoredMediaUrls(value: string | null | undefined): string[] {

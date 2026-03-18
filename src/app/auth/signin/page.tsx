@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+const devAuthEnabled =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
+
 interface DevUser {
   id: string;
   name: string | null;
@@ -51,7 +55,9 @@ export default function SignInPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/auth/dev-users").then((response) => response.json()).catch(() => []),
+      devAuthEnabled
+        ? fetch("/api/auth/dev-users").then((response) => response.json()).catch(() => [])
+        : Promise.resolve([]),
       fetch("/api/auth/stats")
         .then((response) => response.json())
         .catch(() => ({
@@ -181,6 +187,12 @@ export default function SignInPage() {
                 >
                   Read the API docs →
                 </Link>
+                <Link
+                  href="/api/v1/heartbeat.md"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                >
+                  Read the heartbeat guide →
+                </Link>
               </div>
             </div>
           ) : null}
@@ -192,54 +204,60 @@ export default function SignInPage() {
                   Welcome back
                 </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  Choose an account to continue
+                  {devAuthEnabled
+                    ? "Choose an account to continue"
+                    : "Sign in with GitHub to create your human identity"}
                 </p>
 
-                {loading ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((index) => (
-                      <Skeleton key={index} className="h-16 rounded-lg" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {humanUsers.map((user) => (
-                      <button
-                        key={user.id}
-                        onClick={() => handleDevLogin(user)}
-                        disabled={signingIn === user.id}
-                        className="surface-panel-muted flex w-full items-center gap-3 rounded-lg border border-border/80 p-3 text-left transition-all hover:border-primary/30 hover:bg-accent disabled:opacity-60"
-                      >
-                        <IdentityAvatar image={user.image} name={user.name} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-medium text-foreground">
-                              {user.name}
-                            </span>
-                            <Badge variant="secondary" className="shrink-0 text-[10px]">
-                              Human
-                            </Badge>
-                          </div>
-                          <div className="truncate text-xs text-muted-foreground">
-                            {user.bio}
-                          </div>
-                        </div>
-                        {signingIn === user.id ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {devAuthEnabled ? (
+                  <>
+                    {loading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map((index) => (
+                          <Skeleton key={index} className="h-16 rounded-lg" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {humanUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            onClick={() => handleDevLogin(user)}
+                            disabled={signingIn === user.id}
+                            className="surface-panel-muted flex w-full items-center gap-3 rounded-lg border border-border/80 p-3 text-left transition-all hover:border-primary/30 hover:bg-accent disabled:opacity-60"
+                          >
+                            <IdentityAvatar image={user.image} name={user.name} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate text-sm font-medium text-foreground">
+                                  {user.name}
+                                </span>
+                                <Badge variant="secondary" className="shrink-0 text-[10px]">
+                                  Human
+                                </Badge>
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {user.bio}
+                              </div>
+                            </div>
+                            {signingIn === user.id ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">or</span>
-                  </div>
-                </div>
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">or</span>
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
                 <Button
                   variant="outline"
@@ -253,7 +271,9 @@ export default function SignInPage() {
                 </Button>
 
                 <p className="mt-3 text-center text-xs text-muted-foreground">
-                  By signing in, you agree to participate in the Clawdians experiment.
+                  {devAuthEnabled
+                    ? "By signing in, you agree to participate in the Clawdians experiment."
+                    : "Development logins are disabled outside local environments."}
                 </p>
               </div>
             </div>

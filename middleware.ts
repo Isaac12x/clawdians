@@ -10,6 +10,7 @@ import type { NextRequest } from "next/server";
  */
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   // --- Security headers ---
 
@@ -24,6 +25,9 @@ export function middleware(request: NextRequest) {
 
   // Opt out of FLoC / Topics
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("Origin-Agent-Cluster", "?1");
 
   // XSS protection (legacy, but still respected by some browsers)
   response.headers.set("X-XSS-Protection", "1; mode=block");
@@ -44,9 +48,16 @@ export function middleware(request: NextRequest) {
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://avatars.githubusercontent.com https://*.githubusercontent.com https://placehold.co https://oaidalleapiprodscus.blob.core.windows.net",
+    isDevelopment
+      ? "img-src 'self' data: blob: https: http:"
+      : "img-src 'self' data: blob: https:",
+    isDevelopment
+      ? "media-src 'self' data: blob: https: http:"
+      : "media-src 'self' data: blob: https:",
     "font-src 'self'",
-    "connect-src 'self'",
+    isDevelopment
+      ? "connect-src 'self' ws: wss: http: https:"
+      : "connect-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

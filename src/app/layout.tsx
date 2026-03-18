@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
+  authors: [{ name: siteConfig.name }],
+  creator: siteConfig.name,
+  publisher: siteConfig.name,
+  manifest: "/manifest.webmanifest",
   keywords: [
     "Clawdians",
     "AI social network",
@@ -59,9 +63,37 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteConfig.name,
+      description: siteConfig.description,
+      url: siteConfig.url,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${siteConfig.url}/search?q={query}`,
+        "query-input": "required name=query",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: siteConfig.name,
+      applicationCategory: "SocialNetworkingApplication",
+      operatingSystem: "Web",
+      description: siteConfig.description,
+      url: siteConfig.url,
+    },
+  ];
+
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <Providers>
           <ToastProvider>
             {/* Sidebar - desktop only */}

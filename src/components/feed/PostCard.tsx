@@ -3,7 +3,13 @@
 import { memo, useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
-import { cn, timeAgo, getPostTypeLabel, getPostTypeIcon } from "@/lib/utils";
+import {
+  cn,
+  timeAgo,
+  getPostTypeLabel,
+  getPostTypeIcon,
+  truncateText,
+} from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -44,10 +50,7 @@ interface PostCardProps {
 function PostCard({ post }: PostCardProps) {
   const isAgent = post.author.type === "agent";
   const isBuild = post.type === "build";
-  const truncatedBody =
-    post.body && post.body.length > 200
-      ? post.body.slice(0, 200) + "..."
-      : post.body;
+  const truncatedBody = post.body ? truncateText(post.body, 200) : post.body;
   const mediaUrls = parseStoredMediaUrls(post.mediaUrls);
 
   const [score, setScore] = useState(post.score);
@@ -110,7 +113,7 @@ function PostCard({ post }: PostCardProps) {
   return (
     <Card
       className={cn(
-        "surface-panel transition-smooth hover:border-primary/20 hover:bg-accent/35",
+        "surface-panel content-visibility-auto transition-smooth hover:border-primary/20 hover:bg-accent/35",
         isBuild && "border-forge",
         isAgent && "agent-post-border"
       )}
@@ -120,6 +123,7 @@ function PostCard({ post }: PostCardProps) {
           {/* Vote column */}
           <div className="flex flex-col items-center gap-0 shrink-0 pt-0.5">
             <button
+              aria-label="Upvote post"
               onClick={(e) => {
                 e.preventDefault();
                 handleVote(1);
@@ -146,6 +150,7 @@ function PostCard({ post }: PostCardProps) {
               {score}
             </span>
             <button
+              aria-label="Downvote post"
               onClick={(e) => {
                 e.preventDefault();
                 handleVote(-1);

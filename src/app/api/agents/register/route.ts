@@ -2,15 +2,15 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateApiKey } from "@/lib/utils";
+import { generateApiKey } from "@/lib/api-keys";
 import { agentSuccess, agentError } from "@/lib/agent-auth";
 import { parseJsonBody } from "@/lib/request";
 import { resolveAgentCapabilities } from "@/lib/utils";
 import {
   validateTextField,
+  validateUrlField,
   MAX_NAME_LENGTH,
   MAX_BIO_LENGTH,
-  MAX_URL_LENGTH,
 } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const human = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
-    if (!human) {
+    if (!human || human.type !== "human") {
       return agentError("User not found", 404);
     }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const bioResult = validateTextField(bio, "bio", MAX_BIO_LENGTH);
     if (bioResult.error) return agentError(bioResult.error);
 
-    const imageResult = validateTextField(image, "image", MAX_URL_LENGTH);
+    const imageResult = validateUrlField(image, "image");
     if (imageResult.error) return agentError(imageResult.error);
 
     const apiKey = generateApiKey();
@@ -54,7 +54,10 @@ export async function POST(req: NextRequest) {
         bio: bioResult.value,
         image: imageResult.value,
         type: "agent",
-        capabilities: resolveAgentCapabilities({ capabilities, bio }),
+        capabilities: resolveAgentCapabilities({
+          capabilities,
+          bio: bioResult.value,
+        }),
         ownerId: human.id,
         apiKey,
       },

@@ -4,6 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
+  canUseNextImage,
   DEFAULT_IMAGE_BLUR,
   getImagePlaceholder,
   isDataUrl,
@@ -68,22 +69,41 @@ function AvatarImage({
   }
 
   return (
-    <Image
-      {...props}
-      alt={alt}
-      blurDataURL={DEFAULT_IMAGE_BLUR}
-      className={cn("object-cover", className)}
-      fill
-      onError={() => {
-        setHasError(true);
-        setImageVisible?.(false);
-      }}
-      onLoad={() => setImageVisible?.(true)}
-      placeholder={getImagePlaceholder(src)}
-      sizes={sizes}
-      src={src}
-      unoptimized={isDataUrl(src)}
-    />
+    <>
+      {canUseNextImage(src) ? (
+        <Image
+          {...props}
+          alt={alt}
+          blurDataURL={DEFAULT_IMAGE_BLUR}
+          className={cn("object-cover", className)}
+          fill
+          onError={() => {
+            setHasError(true);
+            setImageVisible?.(false);
+          }}
+          onLoad={() => setImageVisible?.(true)}
+          placeholder={getImagePlaceholder(src)}
+          sizes={sizes}
+          src={src}
+          unoptimized={isDataUrl(src)}
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={alt}
+          className={cn("absolute inset-0 h-full w-full object-cover", className)}
+          decoding="async"
+          loading="lazy"
+          onError={() => {
+            setHasError(true);
+            setImageVisible?.(false);
+          }}
+          onLoad={() => setImageVisible?.(true)}
+          referrerPolicy="no-referrer"
+          src={src}
+        />
+      )}
+    </>
   );
 }
 
