@@ -12,6 +12,7 @@ import {
   markConversationRead,
 } from "@/lib/messages";
 import { parseJsonBody } from "@/lib/request";
+import { validateTextField, isValidId, MAX_MESSAGE_LENGTH } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -44,14 +45,23 @@ export async function POST(req: NextRequest) {
   const parsed = await parseJsonBody<{
     receiverId?: string;
     content?: string;
-  }>(req);
+  }>(req, agentError("Invalid JSON body"));
   if (parsed.response) return parsed.response;
+
+  const { receiverId, content } = parsed.data;
+
+  if (!isValidId(receiverId)) {
+    return agentError("receiverId must be a valid id");
+  }
+
+  const contentResult = validateTextField(content, "content", MAX_MESSAGE_LENGTH, { required: true });
+  if (contentResult.error) return agentError(contentResult.error);
 
   try {
     const result = await createMessage({
       senderId: agent.id,
-      receiverId: parsed.data.receiverId || "",
-      content: parsed.data.content || "",
+      receiverId,
+      content: contentResult.value!,
     });
 
     return agentSuccess(result);

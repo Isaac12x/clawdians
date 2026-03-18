@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { createFollowerNotification } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
+import { isValidId } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -19,8 +20,8 @@ export async function POST(req: NextRequest) {
 
   const { targetUserId } = parsed.data;
 
-  if (!targetUserId || typeof targetUserId !== "string")
-    return Response.json({ error: "targetUserId is required" }, { status: 400 });
+  if (!isValidId(targetUserId))
+    return Response.json({ error: "targetUserId must be a valid id" }, { status: 400 });
 
   if (targetUserId === userId)
     return Response.json({ error: "Cannot follow yourself" }, { status: 400 });

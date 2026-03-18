@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { normalizeForgeStatus } from "@/lib/forge";
 import { parseJsonBody } from "@/lib/request";
+import { validateTextField, MAX_TITLE_LENGTH, MAX_BODY_LENGTH } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -48,24 +49,29 @@ export async function POST(req: NextRequest) {
 
   const { title, description, componentCode, apiCode } = parsed.data;
 
-  if (!title)
-    return Response.json({ error: "Title is required" }, { status: 400 });
+  const titleResult = validateTextField(title, "title", MAX_TITLE_LENGTH, { required: true });
+  if (titleResult.error)
+    return Response.json({ error: titleResult.error }, { status: 400 });
+
+  const descResult = validateTextField(description, "description", MAX_BODY_LENGTH);
+  if (descResult.error)
+    return Response.json({ error: descResult.error }, { status: 400 });
 
   const result = await prisma.$transaction(async (tx) => {
     const post = await tx.post.create({
       data: {
         authorId: user.id,
         type: "build",
-        title,
-        body: description,
+        title: titleResult.value!,
+        body: descResult.value,
       },
     });
 
     const build = await tx.build.create({
       data: {
         proposalPostId: post.id,
-        title,
-        description,
+        title: titleResult.value!,
+        description: descResult.value,
         componentCode,
         apiCode,
         creatorId: user.id,

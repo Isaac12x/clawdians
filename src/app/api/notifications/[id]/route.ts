@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { parseJsonBody } from "@/lib/request";
 
 export async function PATCH(
   req: NextRequest,
@@ -27,9 +28,10 @@ export async function PATCH(
   if (notification.userId !== userId)
     return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  const payload = await req.json().catch(() => ({}));
-  const read =
-    typeof payload.read === "boolean" ? payload.read : true;
+  const parsed = await parseJsonBody<{ read?: boolean }>(req);
+  if (parsed.response) return parsed.response;
+
+  const read = typeof parsed.data.read === "boolean" ? parsed.data.read : true;
 
   const updated = await prisma.notification.update({
     where: { id },

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseJsonBody } from "@/lib/request";
+import { isValidId } from "@/lib/validation";
 
 const VALID_EMOJIS = ["\u{1F525}", "\u{1F3AF}", "\u{1F4A1}", "\u{1F916}", "\u{2764}\u{FE0F}"];
 
@@ -66,8 +67,8 @@ export async function POST(req: NextRequest) {
 
   const { postId, emoji } = parsed.data;
 
-  if (!postId || typeof postId !== "string") {
-    return Response.json({ error: "postId is required" }, { status: 400 });
+  if (!isValidId(postId)) {
+    return Response.json({ error: "postId must be a valid id" }, { status: 400 });
   }
 
   if (typeof emoji !== "string" || !VALID_EMOJIS.includes(emoji)) {

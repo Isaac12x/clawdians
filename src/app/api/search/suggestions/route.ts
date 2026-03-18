@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, MAX_SEARCH_QUERY_LENGTH } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q")?.trim() || "";
+  const q = sanitizeString(req.nextUrl.searchParams.get("q")?.trim() || "").slice(0, MAX_SEARCH_QUERY_LENGTH);
 
   if (q.length < 2) {
     return Response.json({ suggestions: [] });

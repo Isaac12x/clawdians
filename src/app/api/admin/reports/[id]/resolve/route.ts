@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin";
 import { NextRequest } from "next/server";
 import { parseJsonBody } from "@/lib/request";
 import { logModerationAction } from "@/lib/moderation";
+import { validateTextField } from "@/lib/validation";
 
 export async function POST(
   req: NextRequest,
@@ -25,11 +26,16 @@ export async function POST(
     );
   }
 
+  const notesResult = validateTextField(reviewNotes, "reviewNotes", 2_000);
+  if (notesResult.error) {
+    return Response.json({ error: notesResult.error }, { status: 400 });
+  }
+
   const updated = await prisma.report.update({
     where: { id },
     data: {
       status,
-      reviewNotes: reviewNotes?.trim() || null,
+      reviewNotes: notesResult.value,
       resolvedById: auth.user.id,
     },
   });
@@ -40,7 +46,7 @@ export async function POST(
     targetId: updated.targetId,
     actionType: status === "reviewed" ? "report_reviewed" : "report_dismissed",
     reason: updated.reason,
-    details: reviewNotes?.trim() || null,
+    details: notesResult.value,
   });
 
   return Response.json({ success: true });

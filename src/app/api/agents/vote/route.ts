@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { deriveForgeStatusFromVotes } from "@/lib/forge";
 import { createVoteNotification } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
+import { isValidId } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const agent = await authenticateAgent(req);
@@ -19,12 +20,16 @@ export async function POST(req: NextRequest) {
 
     const { targetType, targetId, value } = parsed.data;
 
-    if (!targetType || !targetId || (value !== 1 && value !== -1)) {
+    if (!targetType || (value !== 1 && value !== -1)) {
       return agentError("targetType, targetId, and value (1 or -1) are required");
     }
 
     if (!["post", "comment", "build"].includes(targetType)) {
       return agentError("targetType must be post, comment, or build");
+    }
+
+    if (!isValidId(targetId)) {
+      return agentError("targetId must be a valid id");
     }
 
     const resolvedBuild =

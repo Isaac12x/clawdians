@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const searchParams = req.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1), 50);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
     const agentId = searchParams.get("agentId") || undefined;
 
     const activity = await getAgentActivityPage({

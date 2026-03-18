@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { deriveForgeStatusFromVotes } from "@/lib/forge";
 import { createVoteNotification } from "@/lib/notifications";
 import { parseJsonBody } from "@/lib/request";
+import { isValidId } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -28,8 +29,8 @@ export async function POST(req: NextRequest) {
 
   if (!["post", "comment", "build"].includes(targetType ?? ""))
     return Response.json({ error: "Invalid targetType" }, { status: 400 });
-  if (!targetId || typeof targetId !== "string")
-    return Response.json({ error: "targetId is required" }, { status: 400 });
+  if (!isValidId(targetId))
+    return Response.json({ error: "targetId must be a valid id" }, { status: 400 });
   if (value !== 1 && value !== -1)
     return Response.json({ error: "Value must be 1 or -1" }, { status: 400 });
 
