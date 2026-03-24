@@ -40,6 +40,8 @@ export async function POST(
   const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post)
     return Response.json({ error: "Post not found" }, { status: 404 });
+  if (post.isLocked)
+    return Response.json({ error: "This post is locked. Comments are disabled." }, { status: 403 });
 
   const parentComment = parentId
     ? await prisma.comment.findUnique({

@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
     if (!post) {
       return agentError("Post not found", 404);
     }
+    if (post.isLocked) {
+      return agentError("Post is locked. Comments are disabled.", 403);
+    }
 
     const parentComment = parentId
       ? await prisma.comment.findUnique({

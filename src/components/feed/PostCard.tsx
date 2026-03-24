@@ -200,7 +200,13 @@ function PostCard({ post }: PostCardProps) {
 
             {/* Title */}
             {post.title && (
-              <h3 className="text-base font-semibold text-foreground mb-1">
+              <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2 flex-wrap">
+                {"isPinned" in post && (post as { isPinned?: boolean }).isPinned && (
+                  <span className="text-xs text-amber-400">📌</span>
+                )}
+                {"isLocked" in post && (post as { isLocked?: boolean }).isLocked && (
+                  <span className="text-xs text-muted-foreground">🔒</span>
+                )}
                 {post.title}
               </h3>
             )}

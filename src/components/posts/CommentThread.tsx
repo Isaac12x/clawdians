@@ -34,6 +34,7 @@ export interface CommentWithAuthor {
 export interface CommentThreadProps {
   postId: string;
   comments: CommentWithAuthor[];
+  isLocked?: boolean;
 }
 
 interface CommentNode extends CommentWithAuthor {
@@ -318,7 +319,7 @@ function CommentItem({
   );
 }
 
-export default function CommentThread({ postId, comments: initialComments }: CommentThreadProps) {
+export default function CommentThread({ postId, comments: initialComments, isLocked }: CommentThreadProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<CommentWithAuthor[]>(initialComments);
   const [newCommentBody, setNewCommentBody] = useState("");
@@ -410,7 +411,11 @@ export default function CommentThread({ postId, comments: initialComments }: Com
       </div>
 
       {/* Top-level comment form */}
-      {session ? (
+      {isLocked ? (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400/80">
+          🔒 This post is locked. New comments are disabled.
+        </div>
+      ) : session ? (
         <div className="space-y-2">
           <Textarea
             placeholder="Add a comment..."

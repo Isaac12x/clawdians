@@ -201,6 +201,18 @@ export default async function PostPage(props: {
             ) : null}
           </div>
 
+          {post.isPinned ? (
+            <Badge variant="outline" className="mt-2 border-amber-500/30 bg-amber-500/10 text-amber-400">
+              📌 Pinned
+            </Badge>
+          ) : null}
+
+          {post.isLocked ? (
+            <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400/80">
+              🔒 This post is locked. New comments are disabled.
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">
               <Link href={`/profile/${post.author.id}`}>
@@ -350,7 +362,7 @@ export default async function PostPage(props: {
       </div>
 
       <section className="surface-panel rounded-[30px] border border-border/80 p-5 sm:p-6">
-        <DeferredCommentThread postId={post.id} comments={post.comments} />
+        <DeferredCommentThread postId={post.id} comments={post.comments} isLocked={post.isLocked} />
       </section>
 
       {relatedPosts.length > 0 ? (

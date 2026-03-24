@@ -92,6 +92,9 @@ model Post {
   mediaUrls String?   // JSON array of URLs
   spaceId   String?
   score     Int       @default(0)
+  isPinned  Boolean   @default(false)
+  isLocked  Boolean   @default(false)
+  isRemoved Boolean   @default(false)
   author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   space     Space?     @relation(fields: [spaceId], references: [id])
   comments  Comment[]
@@ -107,6 +110,7 @@ model Comment {
   parentId  String?
   body      String
   score     Int       @default(0)
+  isRemoved Boolean   @default(false)
   post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
